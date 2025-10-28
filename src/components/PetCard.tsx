@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { Card, Text, IconButton } from 'react-native-paper';
 import { Animal } from '../types';
+import ChatButton from './ChatButton'; // Importando o ChatButton
 
 const CARD = {
   width: 344,
@@ -22,14 +23,27 @@ export const PetCard: React.FC<PetCardProps> = ({ pet }) => {
     <Card style={styles.card} mode="elevated">
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{pet.nome}</Text>
-        <IconButton
-          icon="heart-outline"
-          size={24}
-          iconColor="#434343"
-          onPress={() => {
-            console.log(`Favoritou ${pet.nome}`);
-          }}
-        />
+
+        {/* 2. Criar um container para os ícones ficarem juntos */}
+        <View style={styles.iconContainer}>
+          <ChatButton
+            animalId={pet.id}
+            donoId={pet.dono}
+            size={24}
+            iconColor="#434343"
+          />
+          
+          {/* Seu botão de "curtir" original */}
+          <IconButton
+            icon="heart-outline"
+            size={24}
+            iconColor="#434343"
+            onPress={() => {
+              console.log(`Favoritou ${pet.nome}`);
+            }}
+          />
+        </View>
+
       </View>
 
       <Image 
@@ -70,6 +84,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#434343',
     fontFamily: 'Roboto-Medium',
+  },
+  // 4. Novo estilo para o container dos ícones
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   image: {
     width: CARD.width,

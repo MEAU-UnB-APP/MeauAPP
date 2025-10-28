@@ -27,6 +27,7 @@ import { Termo } from './screens/Termo';
 import { Chat } from './screens/Chat';
 import { Dicas } from './screens/Dicas';
 import { InformacoesPets } from './screens/InformacoesPets';
+import { IndividualChatScreen } from './screens/IndividualChatScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -284,6 +285,17 @@ const RootStack = createNativeStackNavigator({
         path: 'app/finalizar-processo',
       },
     },
+    IndividualChat: {
+      screen: IndividualChatScreen,
+      options: {
+        headerStyle: { backgroundColor: '#88c9bf' },
+        headerTitleStyle: { fontFamily: 'Roboto-Medium', fontSize: 20, color: '#434343' },
+        headerTintColor: '#434343', // Controla a cor da seta "voltar"
+      },
+      linking: {
+        path: 'app/chat/:chatRoomID', 
+      },
+    },
     NotFound: {
       screen: NotFound,
       options: {
@@ -369,6 +381,10 @@ declare global {
       CadastroAnimal: undefined;
       Login: undefined;
       FinalizarProcesso: undefined;
+      IndividualChat: {
+        chatRoomID: string;
+        chatTitle: string;
+      };
       NotFound: undefined;
     }
   }
