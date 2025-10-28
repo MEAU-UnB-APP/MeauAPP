@@ -97,20 +97,6 @@ function HomeStack() {
           ),
         }}
       />
-      <Stack.Screen
-        name="IndividualChat"
-        component={IndividualChatScreen}
-        options={({ route }) => ({
-          title: route.params?.chatTitle || "Chat",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-          headerTintColor: "#434343",
-        })}
-      />
     </Stack.Navigator>
   );
 }
@@ -279,6 +265,21 @@ export function AppDrawer() {
           },
         }}
       />
+      <Drawer.Screen
+        name="IndividualChat"
+        component={IndividualChatScreen}
+        options={({ route }: any) => ({
+          title: route.params?.chatTitle || "Chat",
+          headerStyle: { backgroundColor: "#88c9bf" },
+          headerTitleStyle: {
+            fontFamily: "Roboto-Medium",
+            fontSize: 20,
+            color: "#434343",
+          },
+          headerTintColor: "#434343",
+          drawerItemStyle: { display: "none" },
+        })}
+      />
     </Drawer.Navigator>
   );
 }
@@ -306,6 +307,7 @@ const RootStack = createNativeStackNavigator({
             screens: {
               AdotarHome: "adotar",
               CadastroAnimal: "cadastro-animal",
+              // IndividualChat: "chat/:chatRoomID",
             },
           },
           MeuPerfil: "meu-perfil",
@@ -319,6 +321,7 @@ const RootStack = createNativeStackNavigator({
           Historias: "historias",
           Privacidade: "privacidade",
           InformacoesPets: "informacoes-pets",
+          IndividualChat: "chat/:chatRoomID",
         },
       },
     },
@@ -360,21 +363,6 @@ const RootStack = createNativeStackNavigator({
         path: "app/finalizar-processo",
       },
     },
-    IndividualChat: {
-      screen: IndividualChatScreen,
-      options: {
-        headerStyle: { backgroundColor: "#88c9bf" },
-        headerTitleStyle: {
-          fontFamily: "Roboto-Medium",
-          fontSize: 20,
-          color: "#434343",
-        },
-        headerTintColor: "#434343", // Controla a cor da seta "voltar"
-      },
-      linking: {
-        path: "app/chat/:chatRoomID",
-      },
-    },
     NotFound: {
       screen: NotFound,
       options: {
@@ -414,6 +402,7 @@ const linking = {
           Termo: "termo",
           Historias: "historias",
           Privacidade: "privacidade",
+          IndividualChat: "chat/:chatRoomID",
         },
       },
       FinalizarProcesso: "app/finalizar-processo",
@@ -430,10 +419,6 @@ type HomeStackParamList = {
   AdotarHome: undefined;
   CadastroAnimal: undefined;
   CadastroPessoal: undefined;
-  IndividualChat: {
-    chatRoomID: string;
-    chatTitle?: string;
-  };
 };
 
 type DrawerParamList = {
@@ -449,6 +434,10 @@ type DrawerParamList = {
   Termo: undefined;
   Historias: undefined;
   Privacidade: undefined;
+  IndividualChat: {
+    chatRoomID: string;
+    chatTitle?: string;
+  };
 };
 
 type RootStackParamList = StaticParamList<typeof RootStack> & {
