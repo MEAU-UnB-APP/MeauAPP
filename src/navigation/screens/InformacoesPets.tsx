@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, StyleSheet, Alert } from "react-native";
-import { Text, Button, ActivityIndicator } from "react-native-paper";
+import { View, ScrollView, StyleSheet, Alert, FlatList } from "react-native";
+import { Text, Button, ActivityIndicator, Card } from "react-native-paper";
+import { useNavigation, NavigationProp } from "@react-navigation/native";
 
 import {
   collection,
@@ -9,6 +10,8 @@ import {
   getDocs,
   doc,
   deleteDoc,
+  onSnapshot,
+  orderBy,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { db } from "../../config/firebase";
@@ -16,10 +19,21 @@ import { PhotoCarousel } from "../../components/PhotoCarousel";
 import { Separator } from "../../components/Separator";
 import { Animal } from "../../types/index";
 
+type RootStackParamList = {
+  IndividualChat: {
+    chatRoomID: string;
+    chatTitle: string;
+  };
+};
+
 export const InformacoesPets: React.FC<{ route: any }> = ({ route }) => {
   const [pet, setPet] = useState<Animal | null>(null);
   const [loading, setLoading] = useState(true);
+  const [chats, setChats] = useState<any[]>([]);
+  const [chatsLoading, setChatsLoading] = useState(false);
+  const [showInterested, setShowInterested] = useState(false);
   const { petId } = route.params;
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     const fetchPetDetails = async () => {
@@ -66,6 +80,78 @@ export const InformacoesPets: React.FC<{ route: any }> = ({ route }) => {
     }
   }, [petId]);
 
+  const fetchChatsForPet = async () => {
+    if (!pet) return;
+
+    setChatsLoading(true);
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const chatsRef = collection(db, "chats");
+
+      const q = query(
+        chatsRef,
+        where("participants", "array-contains", user.uid),
+        orderBy("lastMessageTimestamp", "desc")
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      const chatsList = querySnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter(
+          (chat) =>
+            chat._chatContext?.animalId === pet.id &&
+            chat._chatContext?.donoId === user.uid
+        );
+
+      setChats(chatsList);
+      setShowInterested(true);
+    } catch (error) {
+      console.error("Erro ao buscar chats: ", error);
+      Alert.alert("Erro", "Não foi possível carregar os interessados");
+    } finally {
+      setChatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!pet || !showInterested) return;
+
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const chatsRef = collection(db, "chats");
+    const q = query(
+      chatsRef,
+      where("_chatContext.animalId", "==", pet.id),
+      where("_chatContext.donoId", "==", user.uid),
+      orderBy("lastMessageTimestamp", "desc")
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const chatsList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setChats(chatsList);
+      },
+      (error) => {
+        console.error("Erro em tempo real dos chats: ", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [pet, showInterested]);
+
   const handleRemovePet = async () => {
     if (!pet) return;
 
@@ -92,11 +178,54 @@ export const InformacoesPets: React.FC<{ route: any }> = ({ route }) => {
   };
 
   const handleViewInterested = () => {
-    Alert.alert(
-      "Funcionalidade em desenvolvimento",
-      "Em breve você poderá ver os interessados!"
-    );
+    fetchChatsForPet();
   };
+
+  const handleBackToPetInfo = () => {
+    setShowInterested(false);
+    setChats([]);
+  };
+
+const handleChatPress = (chat: any) => {
+  const otherUserName = chat._chatContext?.interestedName || "Interessado";
+  
+  navigation.navigate('IndividualChat', {
+    chatRoomID: chat.id,
+    chatTitle: `Chat com ${otherUserName}`
+  });
+};
+
+  const formatTimestamp = (timestamp: any) => {
+    if (!timestamp) return "";
+
+    try {
+      const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      return (
+        date.toLocaleDateString("pt-BR") +
+        " " +
+        date.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch (error) {
+      return "";
+    }
+  };
+
+  const renderChatItem = ({ item }: { item: any }) => (
+    <Card style={styles.chatCard} onPress={() => handleChatPress(item)}>
+      <Card.Content>
+        <Text style={styles.chatTitle}>Interessado em {pet?.nome}</Text>
+        <Text style={styles.lastMessage} numberOfLines={2}>
+          {item.lastMessage || "Chat iniciado"}
+        </Text>
+        <Text style={styles.timestamp}>
+          {formatTimestamp(item.lastMessageTimestamp)}
+        </Text>
+      </Card.Content>
+    </Card>
+  );
 
   if (loading) {
     return (
@@ -111,6 +240,43 @@ export const InformacoesPets: React.FC<{ route: any }> = ({ route }) => {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.infoText}>Animal não encontrado.</Text>
+      </View>
+    );
+  }
+
+  if (showInterested) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Button mode="text" onPress={handleBackToPetInfo} textColor="#434343">
+            ← Voltar para {pet.nome}
+          </Button>
+          <Text style={styles.interestedTitle}>Interessados em {pet.nome}</Text>
+        </View>
+
+        {chatsLoading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#ffd358" />
+            <Text style={styles.infoText}>Buscando interessados...</Text>
+          </View>
+        ) : chats.length === 0 ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.infoText}>
+              Nenhum interessado encontrado para {pet.nome}
+            </Text>
+            <Text style={styles.subInfoText}>
+              Quando alguém se interessar pelo seu pet, aparecerá aqui.
+            </Text>
+          </View>
+        ) : (
+          <FlatList
+            data={chats}
+            keyExtractor={(item) => item.id}
+            renderItem={renderChatItem}
+            contentContainerStyle={styles.chatsList}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
     );
   }
@@ -284,5 +450,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#757575",
     fontFamily: "Roboto-Regular",
+  },
+  subInfoText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#999",
+    fontFamily: "Roboto-Regular",
+    textAlign: "center",
+  },
+  header: {
+    padding: 16,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e0e0e0",
+  },
+  interestedTitle: {
+    fontSize: 18,
+    fontFamily: "Roboto-Medium",
+    color: "#434343",
+    textAlign: "center",
+    marginTop: 8,
+  },
+  chatsList: {
+    padding: 16,
+  },
+  chatCard: {
+    marginBottom: 12,
+    backgroundColor: "#fff",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  chatTitle: {
+    fontSize: 16,
+    fontFamily: "Roboto-Medium",
+    color: "#434343",
+    marginBottom: 4,
+  },
+  lastMessage: {
+    fontSize: 14,
+    fontFamily: "Roboto-Regular",
+    color: "#757575",
+    marginBottom: 4,
+  },
+  timestamp: {
+    fontSize: 12,
+    fontFamily: "Roboto-Regular",
+    color: "#999",
   },
 });

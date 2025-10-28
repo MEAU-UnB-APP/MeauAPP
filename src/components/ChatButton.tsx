@@ -5,10 +5,19 @@ import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { auth, db } from '../config/firebase'; 
 
-type HomeStackParamList = {
-  AdotarHome: undefined;
-  CadastroAnimal: undefined;
-  CadastroPessoal: undefined;
+type RootDrawerParamList = {
+  MeuPerfil: undefined;
+  MeusPets: undefined;
+  InformacoesPets: { petId: string };
+  Favoritos: undefined;
+  Chat: undefined;
+  Adotar: undefined;
+  Dicas: undefined;
+  Eventos: undefined;
+  Legislacao: undefined;
+  Termo: undefined;
+  Historias: undefined;
+  Privacidade: undefined;
   IndividualChat: {
     chatRoomID: string;
     chatTitle?: string;
@@ -23,7 +32,8 @@ interface ChatIconButtonProps {
   animalName?: string;
 }
 
-type ChatNavigationProp = NavigationProp<HomeStackParamList, 'IndividualChat'>;
+// Use the correct navigation type for the drawer
+type ChatNavigationProp = NavigationProp<RootDrawerParamList, 'IndividualChat'>;
 
 const ChatIconButton: React.FC<ChatIconButtonProps> = ({
   animalId,
@@ -77,7 +87,6 @@ const ChatIconButton: React.FC<ChatIconButtonProps> = ({
         chatRoomID: chatRoomID,
         chatTitle: `Sobre ${animalName}`
       });
-
 
     } catch (error) {
       console.error("Erro ao iniciar o chat: ", error);
