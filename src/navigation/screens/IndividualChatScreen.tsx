@@ -142,7 +142,7 @@ export function IndividualChatScreen() {
       const messagesRef = collection(db, 'chats', chatRoomID, 'messages');
       await addDoc(messagesRef, {
         _id: Date.now().toString(),
-        text: `🎉 Adoção confirmada! ${chatData._chatContext.animalName} foi oficialmente adotado(a)!`,
+        text: `🎉 Adoção confirmada! Pet oficialmente adotado(a)!`,
         createdAt: serverTimestamp(),
         user: {
           _id: 'system',
@@ -153,7 +153,7 @@ export function IndividualChatScreen() {
 
       const chatRef = doc(db, 'chats', chatRoomID);
       await setDoc(chatRef, {
-        lastMessage: `Adoção confirmada - ${chatData._chatContext.animalName}`,
+        lastMessage: `Adoção confirmada - Pet oficialmente adotado(a)!`,
         lastMessageTimestamp: serverTimestamp(),
         adoptionConfirmed: true,
       }, { merge: true });
@@ -231,7 +231,7 @@ export function IndividualChatScreen() {
             <Text
               style={{ fontSize: 16, color: '#fff' }}
             >
-              Tem certeza que deseja confirmar a adoção de {chatData?._chatContext?.animalName || 'este animal'}? 
+              Tem certeza que deseja confirmar a adoção deste animal? 
               {"\n\n"}
               Esta ação não pode ser desfeita.
             </Text>
