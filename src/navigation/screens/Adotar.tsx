@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
   StyleSheet, 
@@ -12,7 +13,7 @@ import {
   StatusBar 
 } from 'react-native';
 import { PetCard } from '../../components/PetCard';
-import { Animal } from '../../types'; 
+import { Animal } from '../../types/index'; 
 import { db } from '../../config/firebase'; 
 import { collection, query, where, getDocs } from 'firebase/firestore'; 
 
@@ -22,7 +23,9 @@ export function Adotar() {
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  useEffect(() => {
+useFocusEffect(
+  useCallback(() => { 
+    let isActive = true; 
     const fetchAnimaisDisponiveis = async () => {
       try {
         const animaisCollectionRef = collection(db, "animais");
@@ -31,18 +34,26 @@ export function Adotar() {
         const animaisList = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as Animal[]; 
+        })) as Animal[];
 
-        setAnimais(animaisList);
+        if (isActive) {
+          setAnimais(animaisList);
+        }
       } catch (error) {
         console.error("Erro ao buscar animais disponíveis: ", error);
       } finally {
-        setLoading(false); 
+        if (isActive) setLoading(false);
       }
     };
 
     fetchAnimaisDisponiveis();
-  }, []); 
+
+    return () => {
+      isActive = false;
+      setLoading(true); 
+    };
+  }, []) 
+);
 
   const handlePetPress = (animal: Animal) => {
     setSelectedAnimal(animal);

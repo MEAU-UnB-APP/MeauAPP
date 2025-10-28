@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, FlatList, ActivityIndicator, Text } from 'react-native';
 import { PetCardUser } from '../../components/PetCardUser';
 import { getAuth} from 'firebase/auth'
@@ -10,33 +11,43 @@ export function MeusPets() {
   const [animais, setAnimais] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchAnimaisDisponiveis = async () => {
-      try {
-        const auth = getAuth();
-        const user = auth.currentUser;
-        if (!user) return;
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true; 
 
-        const animaisCollectionRef = collection(db, "animais");
+      const fetchAnimaisDisponiveis = async () => {
+        try {
+          const auth = getAuth();
+          const user = auth.currentUser;
+          if (!user) return;
 
-        const q = query(animaisCollectionRef, where("dono", "==", user.uid));
+          const animaisCollectionRef = collection(db, "animais");
+          const q = query(animaisCollectionRef, where("dono", "==", user.uid));
+          const querySnapshot = await getDocs(q);
 
-        const querySnapshot = await getDocs(q);
-        const animaisList = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Animal[]; 
+          if (isActive) {
+            const animaisList = querySnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+            })) as Animal[];
 
-        setAnimais(animaisList);
-      } catch (error) {
-        console.error("Erro ao buscar seus animais: ", error);
-      } finally {
-        setLoading(false); 
-      }
-    };
+            setAnimais(animaisList);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar seus animais: ", error);
+        } finally {
+          if (isActive) setLoading(false);
+        }
+      };
 
-    fetchAnimaisDisponiveis();
-  }, []); 
+      fetchAnimaisDisponiveis();
+
+      return () => {
+        isActive = false;
+        setLoading(true); 
+      };
+    }, [])
+  );
 
   useEffect(() => {
     console.log(animais);

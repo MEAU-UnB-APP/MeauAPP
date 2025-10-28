@@ -1,7 +1,7 @@
 import * as React from "react";
 import { View, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { Card, Text, IconButton } from "react-native-paper";
-import { Animal } from "../types";
+import { Animal } from "../types/index";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useNavigation } from "@react-navigation/native";

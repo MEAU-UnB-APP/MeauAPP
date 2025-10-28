@@ -186,6 +186,7 @@ export function CadastroAnimal() {
         dataCadastro: new Date(),
         dono: userId,
         fotos: fotosUrls,
+        disponivel: true,
         fotoPrincipal: fotosUrls[0] || null,
         metadata: {
           storageType: 'firebase_storage',
