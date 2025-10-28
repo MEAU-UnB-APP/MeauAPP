@@ -73,7 +73,6 @@ const ChatIconButton: React.FC<ChatIconButtonProps> = ({
         });
       }
 
-      console.log('Navigating to IndividualChat...'); 
       navigation.navigate('IndividualChat', {
         chatRoomID: chatRoomID,
         chatTitle: `Sobre ${animalName}`
