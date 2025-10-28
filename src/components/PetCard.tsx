@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Card, Text, IconButton } from 'react-native-paper';
 import { Animal } from '../types';
 import ChatButton from './ChatButton';
@@ -14,53 +14,56 @@ const FOOTER_H = CARD.height - CARD.headerH - CARD.imageH;
 
 interface PetCardProps {
   pet: Animal;
+  onPress: () => void;
 }
 
-export const PetCard: React.FC<PetCardProps> = ({ pet }) => {
+export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
   const placeholderImage = 'https://placehold.co/344x183/e0e0e0/757575?text=Sem+Foto';
 
   return (
-    <Card style={styles.card} mode="elevated">
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{pet.nome}</Text>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <Card style={styles.card} mode="elevated">
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>{pet.nome}</Text>
 
-        <View style={styles.iconContainer}>
-        {/* Botão para abrir conversa */}
-          <ChatButton
-            animalId={pet.id}
-            animalName={pet.nome}
-            donoId={pet.dono}
-            size={24}
-            iconColor="#434343"
-          />
-          
-          {/* Botão de "curtir" */}
-          <IconButton
-            icon="heart-outline"
-            size={24}
-            iconColor="#434343"
-            onPress={() => {
-              console.log(`Favoritou ${pet.nome}`);
-            }}
-          />
+          <View style={styles.iconContainer}>
+            {/* Botão para abrir conversa */}
+            <ChatButton
+              animalId={pet.id}
+              animalName={pet.nome}
+              donoId={pet.dono}
+              size={24}
+              iconColor="#434343"
+            />
+            
+            {/* Botão de "curtir" */}
+            <IconButton
+              icon="heart-outline"
+              size={24}
+              iconColor="#434343"
+              onPress={(e) => {
+                e.stopPropagation(); // Impede que o clique propague para o card
+                console.log(`Favoritou ${pet.nome}`);
+              }}
+            />
+          </View>
         </View>
 
-      </View>
+        <Image 
+          source={{ uri: pet.fotoPrincipal || placeholderImage }} 
+          style={styles.image} 
+        />
 
-      <Image 
-        source={{ uri: pet.fotoPrincipal || placeholderImage }} 
-        style={styles.image} 
-      />
-
-      <View style={styles.footer}>
-        <View style={styles.tagsRow}>
-          <Text style={styles.tag}>{pet.sexo}</Text>
-          <Text style={styles.tag}>{pet.idade}</Text>
-          <Text style={styles.tag}>{pet.porte}</Text>
+        <View style={styles.footer}>
+          <View style={styles.tagsRow}>
+            <Text style={styles.tag}>{pet.sexo}</Text>
+            <Text style={styles.tag}>{pet.idade}</Text>
+            <Text style={styles.tag}>{pet.porte}</Text>
+          </View>
+          <Text style={styles.location}>{pet.localizacao}</Text>
         </View>
-        <Text style={styles.location}>{pet.localizacao}</Text>
-      </View>
-    </Card>
+      </Card>
+    </TouchableOpacity>
   );
 };
 
