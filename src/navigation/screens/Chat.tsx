@@ -13,6 +13,7 @@ export interface ChatRoom {
     animalId: string;
     donoId: string;
     interestedId: string;
+    animalName?: string;
   };
 }
 

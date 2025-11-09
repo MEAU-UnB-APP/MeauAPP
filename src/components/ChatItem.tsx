@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase'; 
 import { ChatRoom } from '../navigation/screens/Chat'; 
@@ -21,6 +21,7 @@ interface ChatItemProps {
 
 const ChatItem: React.FC<ChatItemProps> = ({ chat }) => {
   const [otherUserName, setOtherUserName] = useState('Carregando...');
+  const [animalPhoto, setAnimalPhoto] = useState<string | null>(null);
   
   const navigation = useNavigation<ChatNavigationProp>();
 
@@ -53,17 +54,57 @@ const ChatItem: React.FC<ChatItemProps> = ({ chat }) => {
     fetchUserData();
   }, [chat]); 
 
+  useEffect(() => {
+    const fetchAnimalPhoto = async () => {
+      const animalId = chat?._chatContext?.animalId;
+
+      if (!animalId) {
+        setAnimalPhoto(null);
+        return;
+      }
+
+      const animalDocRef = doc(db, "animais", animalId);
+
+      try {
+        const docSnap = await getDoc(animalDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const fotoPrincipal = data?.fotoPrincipal;
+          if (typeof fotoPrincipal === 'string' && fotoPrincipal.length > 0) {
+            setAnimalPhoto(fotoPrincipal);
+          } else {
+            setAnimalPhoto(null);
+          }
+        } else {
+          setAnimalPhoto(null);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar foto do animal:", error);
+        setAnimalPhoto(null);
+      }
+    };
+
+    fetchAnimalPhoto();
+  }, [chat?._chatContext?.animalId]);
+
   const handlePress = () => {
-    navigation.getParent()?.navigate('IndividualChat', {
+    const animalName = chat?._chatContext?.animalName;
+    const chatTitle = animalName ? `Sobre ${animalName}` : otherUserName;
+
+    navigation.navigate('IndividualChat', {
       chatRoomID: chat.id,
-      chatTitle: otherUserName,
+      chatTitle,
     });
   };
 
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress}>
       <View style={styles.avatar}>
-        <Ionicons name="person-circle-outline" size={40} color="#757575" />
+        {animalPhoto ? (
+          <Image source={{ uri: animalPhoto }} style={styles.avatarImage} />
+        ) : (
+          <Ionicons name="person-circle-outline" size={40} color="#757575" />
+        )}
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.name}>{otherUserName}</Text>
@@ -84,7 +125,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#e0e0e0',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 12,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   textContainer: {
     flex: 1, 
