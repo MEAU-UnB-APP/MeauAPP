@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { View, Text, StyleSheet, Image, TouchableOpacity , Alert} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -26,31 +26,43 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const [openSection, setOpenSection] = useState<string | null>('User'); 
 
   const [userName, setUserName] = useState('Carregando...');
+  const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-  const fetchUserData = async () => {
+  const fetchUserData = useCallback(async () => {
     const user = auth.currentUser;
     if (user) {
-      // Cria uma referência ao documento do usuário na coleção 'usuários'
       const userDocRef = doc(db, "usuários", user.uid);
       try {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
-          // Se o documento existir, pega o campo 'nome' e atualiza o estado
-          setUserName(docSnap.data().nome);
+          const data = docSnap.data();
+          setUserName(data?.nome ?? "Usuário");
+          const fotoPerfil = data?.fotoPerfil;
+          if (typeof fotoPerfil === 'string' && fotoPerfil.trim().length > 0) {
+            setUserPhotoUrl(fotoPerfil);
+          } else {
+            setUserPhotoUrl(null);
+          }
         } else {
           console.log("Documento do usuário não encontrado no Firestore!");
-          setUserName("Usuário"); // Um nome padrão
+          setUserName("Usuário");
+          setUserPhotoUrl(null);
         }
       } catch (error) {
         console.error("Erro ao buscar dados do usuário:", error);
         setUserName("Usuário");
+        setUserPhotoUrl(null);
       }
     }
-  };
+  }, []);
 
+  useEffect(() => {
     fetchUserData();
-  }, []); 
+  }, [fetchUserData]); 
+
+  const handleImageError = () => {
+    setUserPhotoUrl(null);
+  };
 
   const handleLogout = async () => {
     try {
@@ -75,10 +87,18 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
       <View style={styles.header}>
-        <Image
-          source={require('../assets/images/foto-do-perfil.png')}
-          style={styles.profileImage}
-        />
+        {userPhotoUrl ? (
+          <Image
+            source={{ uri: userPhotoUrl }}
+            style={styles.profileImage}
+            onError={handleImageError}
+          />
+        ) : (
+          <Image
+            source={require('../assets/images/foto-do-perfil.png')}
+            style={styles.profileImage}
+          />
+        )}
       </View>
 
       <View>
