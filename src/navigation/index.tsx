@@ -1,14 +1,6 @@
-import {
-  NavigationContainer,
-  NavigatorScreenParams,
-} from "@react-navigation/native";
-import {
-  createStaticNavigation,
-  StaticParamList,
-} from "@react-navigation/native";
+import { NavigatorScreenParams, DrawerActions, useNavigation } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
-import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { IconButton } from "react-native-paper";
 import CustomDrawer from "../components/CustomDrawer";
 // Telas
@@ -103,7 +95,39 @@ function HomeStack() {
 
 export function AppDrawer() {
   return (
-    <Drawer.Navigator drawerContent={(props) => <CustomDrawer {...props} />}>
+    <Drawer.Navigator
+      screenOptions={({ navigation }) => ({
+        drawerStyle: {
+          backgroundColor: "#FFFFFF",
+          margin: 0,
+          padding: 0,
+          borderRightWidth: 2,
+          borderRightColor: "#757575",
+        },
+        drawerContentStyle: {
+          backgroundColor: "#FFFFFF",
+          margin: 0,
+          padding: 0,
+        },
+        overlayColor: "transparent",
+        headerStyle: { backgroundColor: "#88c9bf" },
+        headerTitleStyle: {
+          fontFamily: "Roboto-Medium",
+          fontSize: 20,
+          color: "#434343",
+        },
+        headerTintColor: "#434343",
+        headerLeft: () => (
+          <IconButton
+            icon="menu"
+            iconColor="#434343"
+            size={25}
+            onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+          />
+        ),
+      })}
+      drawerContent={(props) => <CustomDrawer {...props} />}
+    >
       <Drawer.Screen
         name="MeuPerfil"
         component={MeuPerfil}
@@ -284,137 +308,6 @@ export function AppDrawer() {
   );
 }
 
-const RootStack = createNativeStackNavigator({
-  screens: {
-    Introducao: {
-      screen: Introducao,
-      options: {
-        headerShown: false,
-      },
-      linking: {
-        path: "",
-      },
-    },
-    App: {
-      screen: AppDrawer,
-      options: {
-        headerShown: false,
-      },
-      linking: {
-        path: "app",
-        screens: {
-          Adotar: {
-            screens: {
-              AdotarHome: "adotar",
-              CadastroAnimal: "cadastro-animal",
-              // IndividualChat: "chat/:chatRoomID",
-            },
-          },
-          MeuPerfil: "meu-perfil",
-          MeusPets: "meus-pets",
-          Favoritos: "favoritos",
-          Chat: "chat",
-          Dicas: "dicas",
-          Eventos: "eventos",
-          Legislacao: "legislacao",
-          Termo: "termo",
-          Historias: "historias",
-          Privacidade: "privacidade",
-          InformacoesPets: "informacoes-pets",
-          IndividualChat: "chat/:chatRoomID",
-        },
-      },
-    },
-    Login: {
-      screen: Login,
-      options: {
-        title: "Fazer Login",
-        headerStyle: { backgroundColor: "#88c9bf" },
-        headerTitleStyle: {
-          fontFamily: "Roboto-Medium",
-          fontSize: 20,
-          color: "#434343",
-        },
-        headerTintColor: "#434343",
-      },
-      linking: {
-        path: "app/login",
-      },
-    },
-    CadastroPessoal: {
-      screen: CadastroPessoal,
-      options: {
-        title: "Cadastro Pessoal",
-        headerStyle: { backgroundColor: "#88c9bf" },
-        headerTitleStyle: {
-          fontFamily: "Roboto-Medium",
-          fontSize: 20,
-          color: "#434343",
-        },
-        headerTintColor: "#434343",
-      },
-      linking: {
-        path: "app/cadastro-pessoal",
-      },
-    },
-    FinalizarProcesso: {
-      screen: FinalizarProcesso,
-      linking: {
-        path: "app/finalizar-processo",
-      },
-    },
-    NotFound: {
-      screen: NotFound,
-      options: {
-        title: "404",
-      },
-      linking: {
-        path: "*",
-      },
-    },
-  },
-});
-
-const linking = {
-  prefixes: ["http://localhost:8081", "myapp://"],
-  config: {
-    screens: {
-      Introducao: "",
-      Login: "app/login",
-      CadastroPessoal: "app/cadastro-pessoal",
-      App: {
-        path: "app",
-        screens: {
-          Adotar: {
-            screens: {
-              AdotarHome: "adotar",
-              CadastroAnimal: "cadastro-animal",
-            },
-          },
-          MeuPerfil: "meu-perfil",
-          MeusPets: "meus-pets",
-          InformacoesPets: "informacoes-pets",
-          Favoritos: "favoritos",
-          Chat: "chat",
-          Dicas: "dicas",
-          Eventos: "eventos",
-          Legislacao: "legislacao",
-          Termo: "termo",
-          Historias: "historias",
-          Privacidade: "privacidade",
-          IndividualChat: "chat/:chatRoomID",
-        },
-      },
-      FinalizarProcesso: "app/finalizar-processo",
-      NotFound: "*",
-    },
-  },
-};
-
-export const Navigation = createStaticNavigation(RootStack, {
-  linking,
-});
-
 type HomeStackParamList = {
   AdotarHome: undefined;
   CadastroAnimal: undefined;
@@ -440,24 +333,6 @@ type DrawerParamList = {
   };
 };
 
-type RootStackParamList = StaticParamList<typeof RootStack> & {
+type RootStackParamList = {
   App: NavigatorScreenParams<DrawerParamList>;
 };
-
-declare global {
-  namespace ReactNavigation {
-    interface RootParamList {
-      App: DrawerParamList;
-      Introducao: undefined;
-      CadastroPessoal: undefined;
-      CadastroAnimal: undefined;
-      Login: undefined;
-      FinalizarProcesso: undefined;
-      IndividualChat: {
-        chatRoomID: string;
-        chatTitle: string;
-      };
-      NotFound: undefined;
-    }
-  }
-}

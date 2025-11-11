@@ -85,7 +85,17 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   };
 
   return (
-    <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={{
+        flexGrow: 1,
+        backgroundColor: '#FFFFFF',
+        padding: 0,
+        margin: 0,
+        alignItems: 'stretch',
+      }}
+      style={styles.drawerScroll}
+    >
       <View style={styles.header}>
         {userPhotoUrl ? (
           <Image
@@ -182,6 +192,11 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 };
 
 const styles = StyleSheet.create({
+  drawerScroll: {
+    backgroundColor: '#FFFFFF',
+    padding: 0,
+    margin: 0,
+  },
   header: {
     backgroundColor: '#88c9bf',
     paddingTop: 40,

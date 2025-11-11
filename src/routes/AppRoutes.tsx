@@ -2,7 +2,7 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
-import { AppDrawer, Navigation } from "../navigation/index";
+import { AppDrawer } from "../navigation/index";
 import { Introducao } from "../navigation/screens/Introducao";
 import { Login } from "../navigation/screens/Login";
 import { CadastroPessoal } from "../navigation/screens/CadastroPessoal";
