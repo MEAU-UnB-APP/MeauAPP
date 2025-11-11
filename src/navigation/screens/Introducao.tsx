@@ -20,17 +20,6 @@ export function Introducao() {
             Qual o seu interesse?
           </Text>
           
-          {/* CORREÇÃO: Fechamento correto do View principal */}
-          <View style={styles.buttonContainer}>
-            <SEButton onPress={() => navigation.navigate('App', { screen: 'Adotar' })}>
-              Adotar
-            </SEButton>
-            
-            <SEButton onPress={() => navigation.navigate('CadastroAnimal')}>
-              Cadastrar Animal
-            </SEButton>
-          </View>
-
           <View style={styles.loginContainer}>
             <Pressable 
               onPress={() => navigation.navigate('Login')}

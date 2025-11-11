@@ -1,32 +1,35 @@
-import { Button } from '@react-navigation/elements';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useNavigation } from '@react-navigation/native';
 import { auth } from '../../config/firebase';
 
 export function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const navigation = useNavigation<any>();
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    
     if (!username || !password) {
-      alert('Por favor, preencha todos os campos');
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
       return;
     }
 
+    setLoading(true);
+
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, username, password);
-        const user = userCredential.user;
-
-        alert("Login realizado com sucesso!");
-        console.log("Usuário logado", user.email);
-    }catch (error:any) {
-        alert("Erro ao fazer Login: " + error.mesage);
+      await signInWithEmailAndPassword(auth, username, password);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
+      });
+    } catch (error: any) {
+      Alert.alert('Erro ao fazer login', error?.message ?? 'Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-
-    
   };
 
   return (
@@ -36,7 +39,7 @@ export function Login() {
         <View style={styles.formContainer}>
           <TextInput
             style={styles.input}
-            placeholder="Nome de usuário"
+            placeholder="E-mail"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -58,14 +61,19 @@ export function Login() {
             </TouchableOpacity>
           </View>
           
-          <TouchableOpacity style={styles.button} onPress={handleLogin}>
-            <Text style={styles.buttonText}>Entrar</Text>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
           </TouchableOpacity>
-          <Button 
-          style={styles.button}
-          screen="CadastroPessoal">
-          <Text style={styles.buttonText}>Cadastro</Text>
-        </Button>
+          <TouchableOpacity
+            style={styles.secondaryButton}
+            onPress={() => navigation.navigate('CadastroPessoal')}
+          >
+            <Text style={styles.secondaryButtonText}>Cadastro</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.facebookButton} onPress={() => console.log('Facebook login')}>
@@ -159,10 +167,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   buttonText: {
     fontFamily: 'Roboto-Regular',
     fontSize: 16,
     color: '#434343',
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 4,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#88c9bf',
+  },
+  secondaryButtonText: {
+    fontFamily: 'Roboto-Regular',
+    fontSize: 16,
+    color: '#88c9bf',
   },
   facebookButton: {
     backgroundColor: '#1877F2', 

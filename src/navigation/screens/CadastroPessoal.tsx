@@ -200,11 +200,6 @@ export function CadastroPessoal() {
         }
       }
 
-      Alert.alert(
-        "Sucesso!", 
-        "Cadastro realizado com sucesso! Sua conta foi criada e seus dados foram salvos."
-      );
-
       // Limpar formulário após sucesso
       setNome('');
       setEmail('');
@@ -214,6 +209,22 @@ export function CadastroPessoal() {
       setPassword('');
       setConfirmPassword('');
       setFotoPerfil(null);
+
+      Alert.alert(
+        "Sucesso!", 
+        "Cadastro realizado com sucesso! Sua conta foi criada e seus dados foram salvos.",
+        [
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
+              }),
+          },
+        ],
+        { cancelable: false }
+      );
 
     } catch (error: any) {
       let errorMessage = "Ocorreu um erro ao tentar cadastrar. Tente novamente.";
