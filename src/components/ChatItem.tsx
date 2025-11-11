@@ -21,6 +21,7 @@ interface ChatItemProps {
 
 const ChatItem: React.FC<ChatItemProps> = ({ chat }) => {
   const [otherUserName, setOtherUserName] = useState('Carregando...');
+  const [otherUsername, setOtherUsername] = useState<string | null>(null);
   const [animalPhoto, setAnimalPhoto] = useState<string | null>(null);
   
   const navigation = useNavigation<ChatNavigationProp>();
@@ -41,13 +42,17 @@ const ChatItem: React.FC<ChatItemProps> = ({ chat }) => {
       try {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
-          setOtherUserName(docSnap.data().nome);
+          const data = docSnap.data();
+          setOtherUserName(data?.nome ?? 'Usuário');
+          setOtherUsername(data?.username ?? null);
         } else {
           setOtherUserName("Usuário Desconhecido");
+          setOtherUsername(null);
         }
       } catch (error) {
         console.error("Erro ao buscar nome do usuário:", error);
         setOtherUserName("Erro ao carregar");
+        setOtherUsername(null);
       }
     };
 
@@ -97,6 +102,10 @@ const ChatItem: React.FC<ChatItemProps> = ({ chat }) => {
     });
   };
 
+  const displayUserLabel = otherUsername ?? otherUserName;
+  const animalName = chat?._chatContext?.animalName;
+  const displayName = animalName ? `${displayUserLabel} | ${animalName}` : displayUserLabel;
+
   return (
     <TouchableOpacity style={styles.container} onPress={handlePress}>
       <View style={styles.avatar}>
@@ -107,7 +116,7 @@ const ChatItem: React.FC<ChatItemProps> = ({ chat }) => {
         )}
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.name}>{otherUserName}</Text>
+        <Text style={styles.name}>{displayName}</Text>
         <Text style={styles.lastMessage} numberOfLines={1}>
           {chat.lastMessage}
         </Text>
