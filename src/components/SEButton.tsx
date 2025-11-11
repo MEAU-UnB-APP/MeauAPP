@@ -15,6 +15,7 @@ interface CustomButtonProps {
   backgroundColor?: string;
   children?: React.ReactNode;
   onPress?: (event: GestureResponderEvent) => void;
+  disabled?: boolean;
 }
 
 const SEButton: React.FC<CustomButtonProps> = ({
@@ -22,6 +23,7 @@ const SEButton: React.FC<CustomButtonProps> = ({
   backgroundColor = '#ffd358', 
   children = 'Próximo', 
   onPress,
+  disabled = false,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
@@ -37,9 +39,10 @@ const SEButton: React.FC<CustomButtonProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.button, { backgroundColor }]}
+      style={[styles.button, { backgroundColor }, disabled && styles.disabled]}
       onPress={handlePress}
       activeOpacity={0.7}
+      disabled={disabled}
     >
       <Text style={styles.text}>{children}</Text>
     </TouchableOpacity>
@@ -64,5 +67,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Roboto-Regular',
     fontSize: 12,
     color: '#434343',
+  },
+  disabled: {
+    opacity: 0.6,
   },
 });

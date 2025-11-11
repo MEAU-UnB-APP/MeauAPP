@@ -1,22 +1,20 @@
-import { Button } from '@react-navigation/elements';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, ScrollView, Modal, Alert } from 'react-native';
 import { useState } from 'react';
 import { MaterialIcons } from '@expo/vector-icons';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, storage } from "../../config/firebase";
-import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import SEButton from '../../components/SEButton';
 import SETextInput from '../../components/SETextInput'; 
+import { useNavigation } from '@react-navigation/native';
 
 export function CadastroPessoal() {
+  const navigation = useNavigation<any>();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [idade, setIdade] = useState('');
-  const [estado, setEstado] = useState('');
-  const [cidade, setCidade] = useState('');
-  const [endereco, setEndereco] = useState('');
   const [telefone, setTelefone] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -27,66 +25,18 @@ export function CadastroPessoal() {
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const compressImage = async (uri: string, quality: number = 0.85): Promise<Blob> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        const response = await fetch(uri);
-        const originalBlob = await response.blob();
-
-        if (typeof document !== 'undefined') {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d')!;
-
-            const MAX_WIDTH = 800;
-            const MAX_HEIGHT = 800;
-            let { width, height } = img;
-
-            if (width > height) {
-              if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-              }
-            } else {
-              if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob(
-              (compressedBlob) => {
-                if (compressedBlob) {
-                  resolve(compressedBlob);
-                } else {
-                  reject(new Error('Falha na compressão'));
-                }
-              },
-              'image/jpeg',
-              quality
-            );
-          };
-
-          img.onerror = reject;
-          img.src = URL.createObjectURL(originalBlob);
-        } else {
-          resolve(originalBlob);
-        }
-      } catch (error) {
-        reject(error);
-      }
-    });
+  const fetchImageBlob = async (uri: string): Promise<Blob> => {
+    try {
+      const response = await fetch(uri);
+      return await response.blob();
+    } catch (error) {
+      throw new Error(`Falha ao processar a imagem: ${error}`);
+    }
   };
 
   const uploadProfileImage = async (imageUri: string, userId: string): Promise<string> => {
     try {
-      const compressedBlob = await compressImage(imageUri, 0.85);
+      const imageBlob = await fetchImageBlob(imageUri);
       
       const imageName = `perfis/${userId}/foto_perfil_${Date.now()}.jpg`;
       const storageRef = ref(storage, imageName);
@@ -96,12 +46,12 @@ export function CadastroPessoal() {
         customMetadata: {
           'uploadedBy': userId,
           'uploadTime': new Date().toISOString(),
-          'compressionQuality': '85%',
+          'compressionQuality': 'original',
           'type': 'profile_picture'
         }
       };
 
-      const snapshot = await uploadBytes(storageRef, compressedBlob, metadata);
+      const snapshot = await uploadBytes(storageRef, imageBlob, metadata);
       const downloadURL = await getDownloadURL(snapshot.ref);
       
       return downloadURL;
@@ -178,7 +128,7 @@ export function CadastroPessoal() {
   };
 
   const handleCadastro = async () => {
-    if (!nome || !idade || !email || !estado || !cidade || !endereco || !telefone || !username || !password || !confirmPassword) {
+    if (!nome || !idade || !email || !telefone || !username || !password || !confirmPassword) {
       Alert.alert('Atenção', 'Por favor, preencha todos os campos obrigatórios.');
       return;
     }
@@ -201,38 +151,54 @@ export function CadastroPessoal() {
       const user = userCredential.user;
       const userId = user.uid;
 
-      let fotoPerfilUrl = null;
+      const userDocRef = doc(db, "usuários", userId);
 
-      // Upload da foto de perfil se existir
-      if (fotoPerfil) {
-        Alert.alert("Aguarde", "Fazendo upload da foto de perfil...");
-        fotoPerfilUrl = await uploadProfileImage(fotoPerfil, userId);
-      }
-
-      // Salvar dados adicionais no Firestore
       const userData = {
         nome: nome.trim(),
         email: email.trim(),
         idade: idade.trim(),
-        estado: estado.trim(),
-        cidade: cidade.trim(),
-        endereco: endereco.trim(),
         telefone: telefone.trim(),
         username: username.trim(),
-        fotoPerfil: fotoPerfilUrl,
+        fotoPerfil: null,
         dataCadastro: new Date(),
         ultimaAtualizacao: new Date(),
         tipoUsuario: 'pessoal',
         metadata: {
           storageType: 'firebase_storage',
-          hasProfilePicture: !!fotoPerfilUrl,
-          compression: fotoPerfilUrl ? '85%_quality' : 'none',
+          hasProfilePicture: false,
+          compression: 'none',
           timestamp: new Date().toISOString()
         }
       };
 
-      // Salvar no Firestore na coleção 'usuarios'
-      await setDoc(doc(db, "usuarios", userId), userData);
+      await setDoc(userDocRef, userData);
+
+      if (fotoPerfil) {
+        try {
+          Alert.alert("Aguarde", "Fazendo upload da foto de perfil...");
+          const fotoPerfilUrl = await uploadProfileImage(fotoPerfil, userId);
+
+          await setDoc(
+            userDocRef,
+            {
+              fotoPerfil: fotoPerfilUrl,
+              metadata: {
+                storageType: 'firebase_storage',
+                hasProfilePicture: true,
+                compression: 'original_quality',
+                timestamp: new Date().toISOString(),
+              },
+            },
+            { merge: true }
+          );
+        } catch (uploadError) {
+          console.error("Erro ao fazer upload da foto de perfil:", uploadError);
+          Alert.alert(
+            "Aviso",
+            "Cadastro concluído, mas não foi possível enviar a foto de perfil agora. Você pode tentar adicionar novamente nas configurações."
+          );
+        }
+      }
 
       Alert.alert(
         "Sucesso!", 
@@ -243,9 +209,6 @@ export function CadastroPessoal() {
       setNome('');
       setEmail('');
       setIdade('');
-      setEstado('');
-      setCidade('');
-      setEndereco('');
       setTelefone('');
       setUsername('');
       setPassword('');
@@ -305,27 +268,6 @@ export function CadastroPessoal() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-            />
-            
-            <SETextInput
-              placeholder="Estado"
-              value={estado}
-              onChangeText={setEstado}
-              autoCapitalize="words"
-            />
-            
-            <SETextInput
-              placeholder="Cidade"
-              value={cidade}
-              onChangeText={setCidade}
-              autoCapitalize="words"
-            />
-
-            <SETextInput
-              placeholder="Endereço"
-              value={endereco}
-              onChangeText={setEndereco}
-              autoCapitalize="words"
             />
             
             <SETextInput
@@ -414,12 +356,13 @@ export function CadastroPessoal() {
               {loading ? 'CADASTRANDO...' : 'Fazer Cadastro'}
             </SEButton>
             
-            <Button 
+            <TouchableOpacity 
               style={styles.secondaryButton}
-              screen="Login"
+              onPress={() => navigation.navigate('Login' as never)}
+              activeOpacity={0.7}
             >
               <Text style={styles.secondaryButtonText}>Já tenho uma conta</Text>
-            </Button>
+            </TouchableOpacity>
           </View>
 
           <Text style={styles.divider}>Ou cadastre-se com</Text>

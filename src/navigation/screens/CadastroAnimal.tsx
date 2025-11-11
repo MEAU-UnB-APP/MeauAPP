@@ -48,62 +48,14 @@ export function CadastroAnimal() {
   const [selectedExigencias, setSelectedExigencias] = useState<string[]>([]);
   const [fotosAnimal, setFotosAnimal] = useState<string[]>([]);
 
-  const compressImage = async (uri: string, quality: number = 0.85): Promise<Blob> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        
-        const response = await fetch(uri);
-        const originalBlob = await response.blob();
-
-        if (typeof document !== 'undefined') {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d')!;
-
-            const MAX_WIDTH = 1200;
-            const MAX_HEIGHT = 1200;
-            let { width, height } = img;
-
-            if (width > height) {
-              if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-              }
-            } else {
-              if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-              }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-
-            ctx.drawImage(img, 0, 0, width, height);
-
-            canvas.toBlob(
-              (compressedBlob) => {
-                if (compressedBlob) {
-                  resolve(compressedBlob);
-                } else {
-                  reject(new Error('Falha na compressão'));
-                }
-              },
-              'image/jpeg',
-              quality
-            );
-          };
-
-          img.onerror = reject;
-          img.src = URL.createObjectURL(originalBlob);
-        } else {
-          resolve(originalBlob);
-        }
-      } catch (error) {
-        reject(error);
-      }
-    });
+  const fetchImageBlob = async (uri: string): Promise<{ blob: Blob; size: number }> => {
+    try {
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      return { blob, size: blob.size };
+    } catch (error) {
+      throw new Error(`Falha ao processar a imagem: ${error}`);
+    }
   };
 
   const uploadImages = async (imageUris: string[], userId: string): Promise<string[]> => {
@@ -111,9 +63,8 @@ export function CadastroAnimal() {
     const uploadPromises = imageUris.map(async (uri, index) => {
       try {
         
-        const compressedBlob = await compressImage(uri, 0.85);
+        const { blob: imageBlob, size: originalSize } = await fetchImageBlob(uri);
         
-
         const imageName = `animais/${userId}/${Date.now()}_${index}.jpg`;
         const storageRef = ref(storage, imageName);
 
@@ -122,14 +73,16 @@ export function CadastroAnimal() {
           customMetadata: {
             'uploadedBy': userId,
             'uploadTime': new Date().toISOString(),
-            'compressionQuality': '85%',
-            'originalSize': (await (await fetch(uri)).blob()).size.toString(),
-            'compressedSize': compressedBlob.size.toString(),
-            'reduction': `${((1 - compressedBlob.size / (await (await fetch(uri)).blob()).size) * 100).toFixed(1)}%`
+            'compressionQuality': 'original',
+            'originalSize': originalSize.toString(),
+            'compressedSize': imageBlob.size.toString(),
+            'reduction': originalSize
+              ? `${Math.max(0, (1 - imageBlob.size / originalSize) * 100).toFixed(1)}%`
+              : '0%'
           }
         };
 
-        const snapshot = await uploadBytes(storageRef, compressedBlob, metadata);
+        const snapshot = await uploadBytes(storageRef, imageBlob, metadata);
         
         const downloadURL = await getDownloadURL(snapshot.ref);
         
