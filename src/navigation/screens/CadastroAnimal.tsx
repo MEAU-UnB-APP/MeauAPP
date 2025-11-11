@@ -37,6 +37,7 @@ export function CadastroAnimal() {
 
   const [selectedType, setSelectedType] = useState<OptionType>('ADOÇÃO');
   const [nome, setNome] = useState('');
+  const [localizacao, setLocalizacao] = useState('');
   const [doencas, setDoencas] = useState('');
   const [sobre, setSobre] = useState('');
   const [selectedAge, setSelectedAge] = useState<string | null>(null);
@@ -48,6 +49,22 @@ export function CadastroAnimal() {
   const [selectedExigencias, setSelectedExigencias] = useState<string[]>([]);
   const [fotosAnimal, setFotosAnimal] = useState<string[]>([]);
 
+  const resetForm = () => {
+    setSelectedType('ADOÇÃO');
+    setNome('');
+    setLocalizacao('');
+    setDoencas('');
+    setSobre('');
+    setSelectedAge(null);
+    setSelectedEspecie(null);
+    setSelectedSexo(null);
+    setSelectedPorte(null);
+    setSelectedPersonalities([]);
+    setSelectedHealth([]);
+    setSelectedExigencias([]);
+    setFotosAnimal([]);
+    setIsSubmitted(false);
+  };
   const fetchImageBlob = async (uri: string): Promise<{ blob: Blob; size: number }> => {
     try {
       const response = await fetch(uri);
@@ -97,8 +114,8 @@ export function CadastroAnimal() {
 
   const handleFinalizar = async () => {
     
-    if (!nome.trim() || !selectedEspecie || !selectedSexo || !selectedPorte || !selectedAge) {
-      Alert.alert("Atenção", "Por favor, preencha todos os campos obrigatórios (nome, espécie, sexo, porte e idade).");
+    if (!nome.trim() || !selectedEspecie || !selectedSexo || !selectedPorte || !selectedAge || !localizacao.trim()) {
+      Alert.alert("Atenção", "Por favor, preencha todos os campos obrigatórios (nome, espécie, sexo, porte, idade e localização).");
       return;
     }
 
@@ -133,13 +150,14 @@ export function CadastroAnimal() {
         temperamento: selectedPersonalities,
         saude: selectedHealth,
         exigencias: selectedExigencias,
-        doencas: doencas.trim(),
+        localizacao: localizacao.trim(),
+        doencas: selectedHealth.includes('Doente') ? doencas.trim() : '',
         sobre: sobre.trim(),
         tipoCadastro: selectedType,
         dataCadastro: new Date(),
         dono: userId,
         fotos: fotosUrls,
-        disponivel: true,
+        disponivel: !selectedHealth.includes('Doente'),
         fotoPrincipal: fotosUrls[0] || null,
         metadata: {
           storageType: 'firebase_storage',
@@ -190,6 +208,9 @@ export function CadastroAnimal() {
             privacidade do menu configurações do
             aplicativo.
           </Text>
+          <SEButton backgroundColor="#ffd358" onPress={resetForm}>
+            CADASTRAR NOVO ANIMAL
+          </SEButton>
         </View>
       </SafeAreaView>
     );
@@ -280,13 +301,16 @@ export function CadastroAnimal() {
           />
         </View>
         
-        <View style={styles.fieldGroup}>
-          <SETextInput
-            placeholder="Doenças do animal (opcional)"
-            value={doencas}
-            onChangeText={setDoencas}
-          />
-        </View>
+        {selectedHealth.includes('Doente') && (
+          <View style={styles.fieldGroup}>
+            <SETextInput
+              placeholder="Descreva as doenças do animal"
+              value={doencas}
+              onChangeText={setDoencas}
+              multiline
+            />
+          </View>
+        )}
 
         <View style={styles.fieldGroup}>
           <SETitle type="second" color="azul">EXIGÊNCIAS PARA ADOÇÃO</SETitle>
@@ -294,6 +318,15 @@ export function CadastroAnimal() {
             options={EXIGENCIAS_OPTIONS}
             selectedValues={selectedExigencias}
             onSelectionChange={setSelectedExigencias}
+          />
+        </View>
+
+        <View style={styles.fieldGroup}>
+          <SETitle type="second" color="azul">LOCALIZAÇÃO</SETitle>
+          <SETextInput
+            placeholder="Informe a cidade ou região"
+            value={localizacao}
+            onChangeText={setLocalizacao}
           />
         </View>
         
