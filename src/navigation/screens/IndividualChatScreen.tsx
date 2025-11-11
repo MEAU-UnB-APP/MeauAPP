@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { GiftedChat, IMessage } from 'react-native-gifted-chat';
+import { GiftedChat, IMessage, Avatar, Bubble } from 'react-native-gifted-chat';
 import { 
   collection, 
   addDoc, 
@@ -12,7 +12,7 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { Text, View } from 'react-native';
+import { Text, View, Image, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -43,6 +43,10 @@ export function IndividualChatScreen() {
   const [animalAdopted, setAnimalAdopted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [otherParticipant, setOtherParticipant] = useState<{
+    nome: string;
+    fotoPerfil?: string | null;
+  } | null>(null);
   const navigation = useNavigation();
   const route = useRoute<IndividualChatRouteProp>();
 
@@ -69,6 +73,27 @@ export function IndividualChatScreen() {
               const animalData = animalSnap.data();
               setAnimalAdopted(animalData?.disponivel === false);
             }
+          }
+
+          const participants: string[] = Array.isArray(data?.participants) ? data.participants : [];
+          const otherId = participants.find((id) => id !== user?.uid);
+          if (otherId) {
+            const otherUserRef = doc(db, 'usuários', otherId);
+            const otherUserSnap = await getDoc(otherUserRef);
+            if (otherUserSnap.exists()) {
+              const otherData = otherUserSnap.data();
+              setOtherParticipant({
+                nome: otherData?.nome ?? 'Usuário',
+                fotoPerfil: otherData?.fotoPerfil ?? null,
+              });
+            } else {
+              setOtherParticipant({
+                nome: 'Usuário',
+                fotoPerfil: null,
+              });
+            }
+          } else {
+            setOtherParticipant(null);
           }
         }
       } catch (error) {
@@ -224,6 +249,45 @@ export function IndividualChatScreen() {
     </View>
   );
 
+  const renderAvatar = (props: any) => {
+    if (!props?.currentMessage) {
+      return null;
+    }
+
+    if (props.currentMessage.user?._id === user?.uid) {
+      return <Avatar {...props} />;
+    }
+
+    if (otherParticipant?.fotoPerfil) {
+      return (
+        <Image
+          source={{ uri: otherParticipant.fotoPerfil }}
+          style={styles.avatarImage}
+          onError={() => {
+            setOtherParticipant((prev) =>
+              prev ? { ...prev, fotoPerfil: null } : prev
+            );
+          }}
+        />
+      );
+    }
+
+    return <Avatar {...props} />;
+  };
+
+  const renderChatBubble = (props: any) => (
+    <Bubble
+      {...props}
+      wrapperStyle={{
+        left: { backgroundColor: '#f0f0f0' },
+        right: { backgroundColor: '#4CAF50' },
+      }}
+      textStyle={{
+        right: { color: 'white' },
+      }}
+    />
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <Provider>
@@ -281,8 +345,19 @@ export function IndividualChatScreen() {
         }}
         placeholder={animalAdopted ? "Animal já adotado" : "Digite sua mensagem..."}
         renderSystemMessage={renderSystemMessage}
+        renderAvatar={renderAvatar}
+        renderBubble={renderChatBubble}
         />
         </Provider>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+});
