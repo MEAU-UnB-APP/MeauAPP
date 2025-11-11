@@ -5,12 +5,23 @@ import { Asset } from 'expo-asset';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
 import { createURL } from 'expo-linking';
-import { View, StyleSheet, Image } from 'react-native';
+import { View, StyleSheet, Image, Platform } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import * as React from 'react';
 import { useColorScheme } from 'react-native';
 import { AuthProvider } from './context/AuthContext';
 import  AppRoutes  from "./routes/AppRoutes";
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 
 Asset.loadAsync([
@@ -34,6 +45,35 @@ export function App() {
   });
 
     const [isSplashVisible, setSplashVisible] = useState(true);
+
+  useEffect(() => {
+    const configureNotifications = async () => {
+      try {
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('chat-updates', {
+            name: 'Atualizações de chat',
+            importance: Notifications.AndroidImportance.DEFAULT,
+          });
+        }
+
+        const existingPermissions = await Notifications.getPermissionsAsync();
+        let finalStatus = existingPermissions.status;
+
+        if (existingPermissions.status !== 'granted') {
+          const requested = await Notifications.requestPermissionsAsync();
+          finalStatus = requested.status;
+        }
+
+        if (finalStatus !== 'granted') {
+          console.warn('Permissões de notificação não concedidas.');
+        }
+      } catch (error) {
+        console.error('Erro ao configurar notificações:', error);
+      }
+    };
+
+    configureNotifications();
+  }, []);
 
   useEffect(() => {
     if (loaded) {
@@ -69,8 +109,8 @@ export function App() {
         <NavigationContainer
             theme={theme}
             linking={{
-                enabled: 'auto',
-                prefixes: [prefix],
+              enabled: true,
+              prefixes: [prefix],
             }}
             onReady={() => {
                 SplashScreen.hideAsync();

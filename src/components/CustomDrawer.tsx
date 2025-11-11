@@ -36,7 +36,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         const docSnap = await getDoc(userDocRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setUserName(data?.nome ?? "Usuário");
+          setUserName(data?.username ?? "Usuário");
           const fotoPerfil = data?.fotoPerfil;
           if (typeof fotoPerfil === 'string' && fotoPerfil.trim().length > 0) {
             setUserPhotoUrl(fotoPerfil);

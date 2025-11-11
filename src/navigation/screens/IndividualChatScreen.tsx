@@ -107,12 +107,16 @@ export function IndividualChatScreen() {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedMessages = snapshot.docs.map(doc => {
         const data = doc.data() as FirestoreMessage;
-        const createdAt = (data.createdAt as any).toDate ? (data.createdAt as any).toDate() : new Date();
-        
+        const createdAtValue = (data as any)?.createdAt;
+        const createdAt =
+          createdAtValue && typeof createdAtValue.toDate === 'function'
+            ? createdAtValue.toDate()
+            : new Date();
+
         return {
           _id: doc.id,
           text: data.text,
-          createdAt: createdAt,
+          createdAt,
           user: data.user,
         };
       });
