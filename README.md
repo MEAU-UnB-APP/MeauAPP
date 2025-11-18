@@ -53,9 +53,25 @@ src/
    └── screens/     # Telas do aplicativo
 ```
 
+## 📱 Notificações Push
+
+O MeauAPP implementa notificações push usando **Firebase Cloud Messaging (FCM)** integrado com **Expo**. As notificações são enviadas automaticamente quando:
+- Um novo chat é criado
+- Uma nova mensagem é enviada
+
+Para documentação completa sobre a implementação, consulte: **[IMPLEMENTACAO_NOTIFICACOES.md](./IMPLEMENTACAO_NOTIFICACOES.md)**
+
+### Resumo da Implementação
+
+- ✅ **Cliente**: Expo Notifications para gerenciar permissões e tokens
+- ✅ **Servidor**: Firebase Cloud Functions para enviar notificações
+- ✅ **Armazenamento**: Firestore para armazenar tokens FCM
+- ✅ **Configuração**: Credenciais FCM configuradas via EAS Dashboard
+
 ## Recursos
 
 - [Documentação do React Navigation](https://reactnavigation.org/)
 - [Documentação do Expo](https://docs.expo.dev/)
 - [Documentação do React Native](https://reactnative.dev/)
 - [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging)
+- [Implementação de Notificações - Documentação Completa](./IMPLEMENTACAO_NOTIFICACOES.md)

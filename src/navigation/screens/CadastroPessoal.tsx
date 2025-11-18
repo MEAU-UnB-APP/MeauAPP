@@ -212,12 +212,18 @@ export function CadastroPessoal() {
       setFotoPerfil(null);
 
       // Registrar token de notificação após cadastro bem-sucedido
-      try {
-        await registerForPushNotificationsAsync();
-      } catch (notificationError) {
-        console.warn('⚠️ Não foi possível registrar notificações no cadastro:', notificationError);
-        // Não interrompe o fluxo se falhar
-      }
+      // Adicionar delay para garantir que o documento do usuário foi criado no Firestore
+      console.log('🔔 Iniciando registro de notificações após cadastro...');
+      setTimeout(async () => {
+        try {
+          console.log('⏰ Delay concluído. Registrando notificações...');
+          await registerForPushNotificationsAsync();
+        } catch (notificationError: any) {
+          console.error('❌ Erro ao registrar notificações no cadastro:', notificationError);
+          console.error('❌ Mensagem:', notificationError?.message);
+          // Não interrompe o fluxo se falhar
+        }
+      }, 2000); // 2 segundos de delay para garantir que o documento foi criado
 
       Alert.alert(
         "Sucesso!", 

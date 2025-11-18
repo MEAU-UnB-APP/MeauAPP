@@ -39,14 +39,25 @@ export function App() {
 
   // Configurar notificações push quando o usuário estiver autenticado
   useEffect(() => {
+    console.log('🔔 Configurando listeners de autenticação para notificações...');
+    
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      console.log('🔐 Estado de autenticação mudou. Usuário:', user ? user.uid : 'null');
+      
       if (user) {
+        console.log('✅ Usuário autenticado detectado. Registrando notificações...');
         // Registrar token FCM quando o usuário faz login
         try {
-          await registerForPushNotificationsAsync();
-        } catch (error) {
-          console.error('Erro ao registrar notificações:', error);
+          // Adicionar um pequeno delay para garantir que o documento do usuário existe no Firestore
+          setTimeout(async () => {
+            await registerForPushNotificationsAsync();
+          }, 1000);
+        } catch (error: any) {
+          console.error('❌ Erro ao registrar notificações no App.tsx:', error);
+          console.error('❌ Mensagem:', error?.message);
         }
+      } else {
+        console.log('👤 Usuário não autenticado. Notificações não serão registradas.');
       }
     });
 

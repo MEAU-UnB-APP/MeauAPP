@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { auth } from '../../config/firebase';
+import { registerForPushNotificationsAsync } from '../../services/notificationService';
 
 export function Login() {
   const [username, setUsername] = useState('');
@@ -21,6 +22,20 @@ export function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, username, password);
+      
+      // Registrar token de notificação após login bem-sucedido
+      console.log('🔔 Iniciando registro de notificações após login...');
+      setTimeout(async () => {
+        try {
+          console.log('⏰ Delay concluído. Registrando notificações...');
+          await registerForPushNotificationsAsync();
+        } catch (notificationError: any) {
+          console.error('❌ Erro ao registrar notificações no login:', notificationError);
+          console.error('❌ Mensagem:', notificationError?.message);
+          // Não interrompe o fluxo se falhar
+        }
+      }, 1500); // 1.5 segundos de delay para garantir que o documento existe
+      
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
