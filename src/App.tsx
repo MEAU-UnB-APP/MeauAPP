@@ -11,17 +11,8 @@ import * as React from 'react';
 import { useColorScheme } from 'react-native';
 import { AuthProvider } from './context/AuthContext';
 import  AppRoutes  from "./routes/AppRoutes";
-import * as Notifications from 'expo-notifications';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+import { registerForPushNotificationsAsync, setupNotificationListeners } from './services/notificationService';
+import { auth } from './config/firebase';
 
 
 Asset.loadAsync([
@@ -46,33 +37,35 @@ export function App() {
 
     const [isSplashVisible, setSplashVisible] = useState(true);
 
+  // Configurar notificações push quando o usuário estiver autenticado
   useEffect(() => {
-    const configureNotifications = async () => {
-      try {
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('chat-updates', {
-            name: 'Atualizações de chat',
-            importance: Notifications.AndroidImportance.DEFAULT,
-          });
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // Registrar token FCM quando o usuário faz login
+        try {
+          await registerForPushNotificationsAsync();
+        } catch (error) {
+          console.error('Erro ao registrar notificações:', error);
         }
-
-        const existingPermissions = await Notifications.getPermissionsAsync();
-        let finalStatus = existingPermissions.status;
-
-        if (existingPermissions.status !== 'granted') {
-          const requested = await Notifications.requestPermissionsAsync();
-          finalStatus = requested.status;
-        }
-
-        if (finalStatus !== 'granted') {
-          console.warn('Permissões de notificação não concedidas.');
-        }
-      } catch (error) {
-        console.error('Erro ao configurar notificações:', error);
       }
-    };
+    });
 
-    configureNotifications();
+    // Configurar listeners de notificações
+    const notificationListeners = setupNotificationListeners(
+      (notification) => {
+        console.log('📬 Notificação recebida:', notification);
+      },
+      (response) => {
+        console.log('👆 Notificação tocada:', response);
+        // Aqui você pode adicionar navegação para o chat específico
+        // baseado nos dados da notificação (response.notification.request.content.data)
+      }
+    );
+
+    return () => {
+      unsubscribeAuth();
+      notificationListeners.remove();
+    };
   }, []);
 
   useEffect(() => {

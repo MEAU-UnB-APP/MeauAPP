@@ -48,6 +48,15 @@
           "photosPermission": "O MeauAPP precisa acessar suas fotos para adicionar imagens dos animais no cadastro.",
           "cameraPermission": "O MeauAPP precisa acessar sua câmera para tirar fotos dos animais no cadastro."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/splash-icon.png",
+          "color": "#88c9bf",
+          "sounds": [],
+          "mode": "production"
+        }
       ]
     ],
     "extra": {
