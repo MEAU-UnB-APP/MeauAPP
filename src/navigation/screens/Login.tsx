@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image, TextInput, Alert } from 'react-native';
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { auth } from '../../config/firebase';
 
 export function Login() {
@@ -21,10 +21,12 @@ export function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, username, password);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
-      });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
+        })
+      );
     } catch (error: any) {
       Alert.alert('Erro ao fazer login', error?.message ?? 'Tente novamente.');
     } finally {

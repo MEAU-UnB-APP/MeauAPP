@@ -8,7 +8,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as ImagePicker from 'expo-image-picker';
 import SEButton from '../../components/SEButton';
 import SETextInput from '../../components/SETextInput'; 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { registerForPushNotificationsAsync } from '../../services/notificationService';
 
 export function CadastroPessoal() {
   const navigation = useNavigation<any>();
@@ -210,6 +211,14 @@ export function CadastroPessoal() {
       setConfirmPassword('');
       setFotoPerfil(null);
 
+      // Registrar token de notificação após cadastro bem-sucedido
+      try {
+        await registerForPushNotificationsAsync();
+      } catch (notificationError) {
+        console.warn('⚠️ Não foi possível registrar notificações no cadastro:', notificationError);
+        // Não interrompe o fluxo se falhar
+      }
+
       Alert.alert(
         "Sucesso!", 
         "Cadastro realizado com sucesso! Sua conta foi criada e seus dados foram salvos.",
@@ -217,10 +226,12 @@ export function CadastroPessoal() {
           {
             text: "OK",
             onPress: () =>
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
-              }),
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
+                })
+              ),
           },
         ],
         { cancelable: false }

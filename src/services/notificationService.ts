@@ -38,21 +38,34 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
+      // Solicitar permissão - o sistema mostrará um diálogo nativo
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
 
     if (finalStatus !== 'granted') {
-      console.warn('Permissão de notificação não concedida');
+      console.warn('⚠️ Permissão de notificação não concedida pelo usuário');
+      console.warn('⚠️ O usuário precisará habilitar notificações nas configurações do dispositivo para receber notificações push');
       return null;
     }
 
-    // Obter o token FCM
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: '32cd120f-7040-43bf-bb32-e6c43ca2ecc7', // Do seu app.json
-    });
+    console.log('✅ Permissão de notificação concedida pelo usuário');
 
-    const token = tokenData.data;
+    // Obter o token FCM (Expo Push Token)
+    let token: string | null = null;
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: '32cd120f-7040-43bf-bb32-e6c43ca2ecc7', // Do seu app.json
+      });
+      token = tokenData.data;
+    } catch (tokenError: any) {
+      // Se der erro relacionado a Firebase/FCM, pode ser que precise configurar credenciais
+      if (tokenError?.message?.includes('Firebase') || tokenError?.message?.includes('FCM')) {
+        console.warn('⚠️ Credenciais FCM não configuradas. Veja: https://docs.expo.dev/push-notifications/fcm-credentials/');
+        console.warn('⚠️ Notificações push podem não funcionar até configurar as credenciais no Expo.');
+      }
+      throw tokenError;
+    }
 
     // Configurar canal de notificação para Android
     if (Platform.OS === 'android') {

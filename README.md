@@ -58,3 +58,4 @@ src/
 - [Documentação do React Navigation](https://reactnavigation.org/)
 - [Documentação do Expo](https://docs.expo.dev/)
 - [Documentação do React Native](https://reactnative.dev/)
+- [Firebase Cloud Messaging](https://firebase.google.com/docs/cloud-messaging)
