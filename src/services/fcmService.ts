@@ -1,7 +1,16 @@
-import messaging from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+
+// Import condicional do React Native Firebase (só funciona em Android/iOS)
+let messaging: any = null;
+try {
+  if (Platform.OS !== 'web') {
+    messaging = require('@react-native-firebase/messaging').default;
+  }
+} catch (error) {
+  console.warn('⚠️ React Native Firebase não disponível:', error);
+}
 
 /**
  * Serviço de notificações push via Firebase Cloud Messaging (FCM) V1
@@ -15,6 +24,11 @@ import { auth, db } from '../config/firebase';
  */
 export async function requestNotificationPermission(): Promise<boolean> {
   try {
+    if (Platform.OS === 'web' || !messaging) {
+      console.warn('⚠️ Notificações push não suportadas nesta plataforma');
+      return false;
+    }
+
     console.log('🔐 Solicitando permissão de notificações...');
     
     const authStatus = await messaging().requestPermission();
@@ -41,6 +55,11 @@ export async function requestNotificationPermission(): Promise<boolean> {
  */
 export async function getFCMToken(): Promise<string | null> {
   try {
+    if (Platform.OS === 'web' || !messaging) {
+      console.warn('⚠️ Token FCM não disponível nesta plataforma');
+      return null;
+    }
+
     console.log('🎫 Obtendo token FCM...');
 
     // Verificar permissão antes de obter token
@@ -183,10 +202,15 @@ export function setupNotificationHandlers(
   onNotificationReceived?: (remoteMessage: any) => void,
   onNotificationOpened?: (remoteMessage: any) => void
 ): () => void {
+  if (Platform.OS === 'web' || !messaging) {
+    console.warn('⚠️ Handlers de notificação não disponíveis nesta plataforma');
+    return () => {}; // Retorna função vazia para cleanup
+  }
+
   console.log('📱 Configurando handlers de notificações...');
 
   // Handler para notificações recebidas quando app está em foreground
-  const unsubscribeForeground = messaging().onMessage(async remoteMessage => {
+  const unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
     console.log('📬 Notificação recebida em foreground:', remoteMessage);
     if (onNotificationReceived) {
       onNotificationReceived(remoteMessage);
@@ -194,7 +218,7 @@ export function setupNotificationHandlers(
   });
 
   // Handler para quando usuário toca na notificação e abre o app
-  const unsubscribeOpened = messaging().onNotificationOpenedApp(remoteMessage => {
+  const unsubscribeOpened = messaging().onNotificationOpenedApp((remoteMessage: any) => {
     console.log('👆 Notificação tocada (app em background):', remoteMessage);
     if (onNotificationOpened) {
       onNotificationOpened(remoteMessage);
@@ -204,7 +228,7 @@ export function setupNotificationHandlers(
   // Verificar se app foi aberto através de notificação (app estava fechado)
   messaging()
     .getInitialNotification()
-    .then(remoteMessage => {
+    .then((remoteMessage: any) => {
       if (remoteMessage) {
         console.log('👆 App aberto através de notificação (app estava fechado):', remoteMessage);
         if (onNotificationOpened) {
@@ -226,6 +250,10 @@ export function setupNotificationHandlers(
  */
 export async function checkNotificationPermission(): Promise<boolean> {
   try {
+    if (Platform.OS === 'web' || !messaging) {
+      return false;
+    }
+
     const authStatus = await messaging().hasPermission();
     return (
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
