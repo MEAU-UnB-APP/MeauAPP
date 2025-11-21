@@ -8,6 +8,7 @@ import { auth, db } from "../config/firebase";
 import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { CommonActions } from '@react-navigation/native';
+import { removeTokenFromFirestore } from '../services/fcmService';
 
 
 const DrawerItem = ({ label, onPress }: any) => (
@@ -66,7 +67,23 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
   const handleLogout = async () => {
     try {
+      const user = auth.currentUser;
+      
+      // Remover token FCM do Firestore ANTES de fazer logout
+      // Isso garante que o usuário ainda está autenticado quando tentamos remover o token
+      if (user) {
+        try {
+          console.log('🗑️ Removendo token FCM antes do logout...');
+          await removeTokenFromFirestore(user.uid);
+        } catch (tokenError) {
+          console.error('⚠️ Erro ao remover token FCM no logout:', tokenError);
+          // Não impede o logout se houver erro ao remover token
+        }
+      }
+
+      // Fazer logout
       await signOut(auth);
+      
       // Após o logout, reseta a navegação para a tela de Introdução
       navigation.dispatch(
         CommonActions.reset({

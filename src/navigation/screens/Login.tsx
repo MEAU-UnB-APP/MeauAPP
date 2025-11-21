@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { auth } from '../../config/firebase';
+import { registerForPushNotifications } from '../../services/fcmService';
 
 export function Login() {
   const [username, setUsername] = useState('');
@@ -21,6 +22,18 @@ export function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, username, password);
+      
+      // Registrar token FCM após login bem-sucedido
+      // Adicionar delay para garantir que o documento do usuário existe no Firestore
+      setTimeout(async () => {
+        try {
+          await registerForPushNotifications();
+        } catch (notificationError: any) {
+          console.error('❌ Erro ao registrar notificações no login:', notificationError);
+          // Não interrompe o fluxo se falhar
+        }
+      }, 1500); // 1.5 segundos de delay
+      
       navigation.reset({
         index: 0,
         routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],

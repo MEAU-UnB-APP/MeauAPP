@@ -9,6 +9,7 @@ import * as ImagePicker from 'expo-image-picker';
 import SEButton from '../../components/SEButton';
 import SETextInput from '../../components/SETextInput'; 
 import { useNavigation } from '@react-navigation/native';
+import { registerForPushNotifications } from '../../services/fcmService';
 
 export function CadastroPessoal() {
   const navigation = useNavigation<any>();
@@ -209,6 +210,17 @@ export function CadastroPessoal() {
       setPassword('');
       setConfirmPassword('');
       setFotoPerfil(null);
+
+      // Registrar token FCM após cadastro bem-sucedido
+      // Adicionar delay para garantir que o documento do usuário foi criado no Firestore
+      setTimeout(async () => {
+        try {
+          await registerForPushNotifications();
+        } catch (notificationError: any) {
+          console.error('❌ Erro ao registrar notificações no cadastro:', notificationError);
+          // Não interrompe o fluxo se falhar
+        }
+      }, 2000); // 2 segundos de delay
 
       Alert.alert(
         "Sucesso!", 
