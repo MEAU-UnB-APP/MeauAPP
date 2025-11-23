@@ -12,10 +12,12 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { Text, View, Image, StyleSheet } from 'react-native';
+import { Text, View, Image, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { sendAdoptionConfirmationNotification } from '../../services/notificationService';
 
 type RootStackParamList = {
   IndividualChat: {
@@ -47,6 +49,8 @@ export function IndividualChatScreen() {
     nome: string;
     fotoPerfil?: string | null;
   } | null>(null);
+  const [petName, setPetName] = useState('o pet');
+  const [ownerName, setOwnerName] = useState('O dono');
   const navigation = useNavigation();
   const route = useRoute<IndividualChatRouteProp>();
 
@@ -66,15 +70,28 @@ export function IndividualChatScreen() {
           const isOwner = user?.uid === data?._chatContext?.donoId;
           setIsPetOwner(isOwner);
           
+          // Buscar informações do animal
           if (data?._chatContext?.animalId) {
             const animalRef = doc(db, 'animais', data._chatContext.animalId);
             const animalSnap = await getDoc(animalRef);
             if (animalSnap.exists()) {
               const animalData = animalSnap.data();
               setAnimalAdopted(animalData?.disponivel === false);
+              setPetName(animalData?.nome || 'o pet');
             }
           }
 
+          // Buscar informações do dono
+          if (data?._chatContext?.donoId) {
+            const ownerRef = doc(db, 'usuários', data._chatContext.donoId);
+            const ownerSnap = await getDoc(ownerRef);
+            if (ownerSnap.exists()) {
+              const ownerData = ownerSnap.data();
+              setOwnerName(ownerData?.nome || 'O dono');
+            }
+          }
+
+          // Buscar informações do outro participante
           const participants: string[] = Array.isArray(data?.participants) ? data.participants : [];
           const otherId = participants.find((id) => id !== user?.uid);
           if (otherId) {
@@ -152,14 +169,15 @@ export function IndividualChatScreen() {
   }, [chatRoomID]);
 
   const handleConfirmAdoption = async () => {
-    if (!chatData?._chatContext?.animalId) {
-      console.log('No animal ID found');
+    if (!chatData?._chatContext?.animalId || !chatData?._chatContext?.interestedId) {
+      console.log('Dados incompletos para confirmar adoção');
       return;
     }
 
     try {
-      console.log('Updating animal adoption status...');
+      console.log('Iniciando confirmação de adoção...');
       
+      // Atualizar status do animal no Firestore
       const animalRef = doc(db, 'animais', chatData._chatContext.animalId);
       await updateDoc(animalRef, {
         disponivel: false,
@@ -168,10 +186,21 @@ export function IndividualChatScreen() {
         adotadoEm: serverTimestamp(),
       });
 
+      console.log('✅ Animal marcado como adotado');
+
+      // ENVIAR NOTIFICAÇÃO PARA O USUÁRIO INTERESSADO
+      console.log('📤 Enviando notificação para:', chatData._chatContext.interestedId);
+      await sendAdoptionConfirmationNotification(
+        chatData._chatContext.interestedId,
+        petName,
+        ownerName
+      );
+
+      // Adicionar mensagem de sistema no chat
       const messagesRef = collection(db, 'chats', chatRoomID, 'messages');
       await addDoc(messagesRef, {
         _id: Date.now().toString(),
-        text: `🎉 Adoção confirmada! Pet oficialmente adotado(a)!`,
+        text: `🎉 Adoção confirmada! ${petName} foi oficialmente adotado(a)!`,
         createdAt: serverTimestamp(),
         user: {
           _id: 'system',
@@ -180,9 +209,10 @@ export function IndividualChatScreen() {
         system: true,
       });
 
+      // Atualizar último mensagem do chat
       const chatRef = doc(db, 'chats', chatRoomID);
       await setDoc(chatRef, {
-        lastMessage: `Adoção confirmada - Pet oficialmente adotado(a)!`,
+        lastMessage: `Adoção confirmada - ${petName} foi adotado(a)!`,
         lastMessageTimestamp: serverTimestamp(),
         adoptionConfirmed: true,
       }, { merge: true });
@@ -190,16 +220,11 @@ export function IndividualChatScreen() {
       setAnimalAdopted(true);
       setDialogVisible(false);
       
-      setTimeout(() => {
-        console.log('Adoption confirmed successfully!');
-      }, 100);
+      console.log('✅ Adoção confirmada com sucesso!');
 
     } catch (error) {
-      console.error('Error confirming adoption:', error);
+      console.error('❌ Erro ao confirmar adoção:', error);
       setDialogVisible(false);
-      setTimeout(() => {
-        console.log('Error confirming adoption');
-      }, 100);
     }
   };
 
@@ -289,67 +314,72 @@ export function IndividualChatScreen() {
   );
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <Provider>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <Portal>
+            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+              <Dialog.Title>Confirmar Adoção</Dialog.Title>
+              <Dialog.Content>
+                <Text style={{ fontSize: 16, color: '#333' }}>
+                  Tem certeza que deseja confirmar a adoção de {petName}? 
+                  {"\n\n"}
+                  Esta ação não pode ser desfeita.
+                </Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDialogVisible(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onPress={handleConfirmAdoption} 
+                  textColor="#fff"
+                  mode="contained"
+                  buttonColor="#4CAF50"
+                >
+                  Confirmar Adoção
+                </Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
 
-      <Portal>
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>Confirmar Adoção</Dialog.Title>
-          <Dialog.Content>
-            <Text
-              style={{ fontSize: 16, color: '#fff' }}
-            >
-              Tem certeza que deseja confirmar a adoção deste animal? 
-              {"\n\n"}
-              Esta ação não pode ser desfeita.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onPress={handleConfirmAdoption} 
-              textColor="#fff"
-              mode="contained"
-              buttonColor="#4CAF50"
-              >
-              Confirmar Adoção
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-      {animalAdopted && (
-        <View style={{
-          backgroundColor: '#4CAF50',
-          padding: 15,
-          alignItems: 'center',
-        }}>
-          <Text style={{
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: 16,
-          }}>
-            🎉 Este animal foi adotado!
-          </Text>
-        </View>
-      )}
-      
-      <GiftedChat
-        messages={messages}
-        onSend={messages => onSend(messages)}
-        user={{
-          _id: user?.uid || 'user_anonimo',
-          name: user?.displayName || 'Você', 
-        }}
-        placeholder={animalAdopted ? "Animal já adotado" : "Digite sua mensagem..."}
-        renderSystemMessage={renderSystemMessage}
-        renderAvatar={renderAvatar}
-        renderBubble={renderChatBubble}
-        />
-        </Provider>
-    </View>
+          {animalAdopted && (
+            <View style={{
+              backgroundColor: '#4CAF50',
+              padding: 15,
+              alignItems: 'center',
+            }}>
+              <Text style={{
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: 16,
+              }}>
+                🎉 {petName} foi adotado!
+              </Text>
+            </View>
+          )}
+          
+          <GiftedChat
+            messages={messages}
+            onSend={messages => onSend(messages)}
+            user={{
+              _id: user?.uid || 'user_anonimo',
+              name: user?.displayName || 'Você', 
+            }}
+            placeholder={animalAdopted ? "Animal já adotado" : "Digite sua mensagem..."}
+            renderSystemMessage={renderSystemMessage}
+            renderAvatar={renderAvatar}
+            renderBubble={renderChatBubble}
+            keyboardShouldPersistTaps="never"
+            bottomOffset={0}
+          />
+        </KeyboardAvoidingView>
+      </Provider>
+    </SafeAreaView>
   );
 }
 
