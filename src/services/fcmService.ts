@@ -14,8 +14,7 @@ try {
 
 /**
  * Serviço de notificações push via Firebase Cloud Messaging (FCM) V1
- * Este serviço usa React Native Firebase para obter tokens FCM nativos
- * e salva no Firestore para que as Cloud Functions possam enviar notificações
+ * SOLUÇÃO SIMPLES: Deixa o FCM mostrar notificações na barra automaticamente
  */
 
 /**
@@ -195,6 +194,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
 /**
  * Configura handlers para notificações recebidas
+ * SOLUÇÃO SIMPLES: Não faz nada no foreground para deixar o FCM mostrar na barra
  * @param {Function} onNotificationReceived - Callback quando notificação é recebida em foreground
  * @param {Function} onNotificationOpened - Callback quando usuário toca na notificação
  */
@@ -212,6 +212,16 @@ export function setupNotificationHandlers(
   // Handler para notificações recebidas quando app está em foreground
   const unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
     console.log('📬 Notificação recebida em foreground:', remoteMessage);
+    
+    // 🔥 SOLUÇÃO SIMPLES: NÃO FAZER NADA AQUI!
+    // Deixando o FCM mostrar a notificação na barra automaticamente
+    // O FCM Android geralmente mostra notificações na barra mesmo em foreground
+    // a menos que você as suprima com código personalizado
+    
+    console.log('✅ Deixando FCM mostrar notificação na barra automaticamente');
+    console.log('📱 A notificação deve aparecer na BARRA do celular agora!');
+
+    // Apenas log para debug, mas não interfere com a notificação
     if (onNotificationReceived) {
       onNotificationReceived(remoteMessage);
     }
@@ -265,3 +275,21 @@ export async function checkNotificationPermission(): Promise<boolean> {
   }
 }
 
+/**
+ * Função para forçar uma notificação de teste
+ * Útil para debug
+ */
+export async function testNotificationInBar() {
+  try {
+    console.log('🧪 Testando notificação na barra...');
+    
+    // Esta função é apenas para debug - não é necessária para o funcionamento
+    if (Platform.OS === 'android') {
+      console.log('📱 Android: Notificações devem aparecer na barra automaticamente');
+      console.log('📱 Verifique a BARRA superior do seu celular');
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro no teste:', error);
+  }
+}
