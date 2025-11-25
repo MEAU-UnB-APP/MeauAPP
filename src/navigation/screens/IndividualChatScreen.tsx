@@ -162,6 +162,7 @@ export function IndividualChatScreen() {
       
       const animalRef = doc(db, 'animais', chatData._chatContext.animalId);
       await updateDoc(animalRef, {
+        dono: chatData._chatContext.interestedId,
         disponivel: false,
         dataAdocao: serverTimestamp(),
         adotadoPor: chatData._chatContext.interestedId,
