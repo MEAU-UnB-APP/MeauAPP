@@ -1,5 +1,5 @@
 import { Text } from '@react-navigation/elements';
-import { StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import { sendTestNotification, sendDelayedTestNotification } from '../../services/notificationService';
 import { registerForPushNotifications } from '../../services/fcmService';
 import { useState, useEffect } from 'react';
@@ -129,47 +129,52 @@ export function Favoritos() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Favoritos</Text>
-      <Text style={styles.subtitle}>Teste de Notificações Push</Text>
-      
-      <TouchableOpacity 
-        style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={handleTestNotification}
-        disabled={isLoading}
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
       >
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Enviando...' : '📱 Teste Normal (App Aberto)'}
+        <Text style={styles.title}>Favoritos</Text>
+        <Text style={styles.subtitle}>Teste de Notificações Push</Text>
+        
+        <TouchableOpacity 
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handleTestNotification}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Enviando...' : '📱 Teste Normal (App Aberto)'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.delayedButton]}
+          onPress={handleDelayedTestNotification}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Preparando...' : '🚨 TESTE COM APP FECHADO'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[styles.button, styles.secondaryButton]}
+          onPress={handleRegisterNotifications}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>🔔 Registrar Notificações</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.instructions}>
+          • <Text style={styles.bold}>Teste Normal:</Text> App aberto{'\n'}
+          • <Text style={styles.bold}>Teste com App Fechado:</Text> Fecha o app após clicar{'\n'}
+          • Verifique a BARRA de notificações do celular
         </Text>
-      </TouchableOpacity>
 
-      <TouchableOpacity 
-        style={[styles.button, styles.delayedButton]}
-        onPress={handleDelayedTestNotification}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Preparando...' : '🚨 TESTE COM APP FECHADO'}
-        </Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity 
-        style={[styles.button, styles.secondaryButton]}
-        onPress={handleRegisterNotifications}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>🔔 Registrar Notificações</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.instructions}>
-        • <Text style={styles.bold}>Teste Normal:</Text> App aberto{'\n'}
-        • <Text style={styles.bold}>Teste com App Fechado:</Text> Fecha o app após clicar{'\n'}
-        • Verifique a BARRA de notificações do celular
-      </Text>
-
-      <View style={styles.debugContainer}>
-        <Text style={styles.debugTitle}>Debug Info:</Text>
-        <Text style={styles.debugText}>{debugInfo || 'Nenhuma informação ainda...'}</Text>
-      </View>
+        <View style={styles.debugContainer}>
+          <Text style={styles.debugTitle}>Debug Info:</Text>
+          <Text style={styles.debugText}>{debugInfo || 'Nenhuma informação ainda...'}</Text>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -177,11 +182,14 @@ export function Favoritos() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 20,
-    padding: 20,
     backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 40,
+    paddingBottom: 40,
+    gap: 20,
   },
   title: {
     fontSize: 28,
