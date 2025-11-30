@@ -42,6 +42,33 @@ npm run android # Para Android
   - `a` para abrir o emulador/dispositivo Android
   - `w` para abrir no navegador web
 
+### Gerando APK para Android
+
+Para gerar um APK para testar no dispositivo Android:
+
+#### Usando EAS Build 
+
+1. Instale o EAS CLI globalmente (se ainda não tiver):
+```sh
+npm install -g eas-cli
+```
+
+2. Faça login no EAS:
+```sh
+eas login
+```
+
+3. Configure o projeto (se ainda não tiver):
+```sh
+eas build:configure
+```
+
+4. Gere o APK para Android:
+```sh
+eas build --platform android --profile preview
+```
+
+O APK será gerado na nuvem e você receberá um link para download.
 
 ## Estrutura do Projeto
 
