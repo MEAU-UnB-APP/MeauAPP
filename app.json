@@ -57,12 +57,6 @@
         {
           "locationAlwaysAndWhenInUsePermission": "O MeauAPP precisa acessar sua localização para preencher automaticamente o endereço do animal no cadastro."
         }
-      ],
-      [
-        "react-native-maps",
-        {
-          "googleMapsApiKey": ""
-        }
       ]
     ],
     "extra": {
