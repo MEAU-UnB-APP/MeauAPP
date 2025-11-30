@@ -14,7 +14,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "O MeauAPP precisa acessar sua câmera para tirar fotos dos animais para cadastro.",
         "NSPhotoLibraryUsageDescription": "O MeauAPP precisa acessar sua galeria para selecionar fotos dos animais para cadastro.",
-        "NSPhotoLibraryAddUsageDescription": "O MeauAPP precisa salvar fotos na sua galeria para compartilhar imagens dos animais."
+        "NSPhotoLibraryAddUsageDescription": "O MeauAPP precisa salvar fotos na sua galeria para compartilhar imagens dos animais.",
+        "NSLocationWhenInUseUsageDescription": "O MeauAPP precisa acessar sua localização para preencher automaticamente o endereço do animal no cadastro."
       }
     },
     "android": {
@@ -27,7 +28,9 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "ACCESS_MEDIA_LOCATION"
+        "ACCESS_MEDIA_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "web": {
@@ -47,6 +50,12 @@
         {
           "photosPermission": "O MeauAPP precisa acessar suas fotos para adicionar imagens dos animais no cadastro.",
           "cameraPermission": "O MeauAPP precisa acessar sua câmera para tirar fotos dos animais no cadastro."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O MeauAPP precisa acessar sua localização para preencher automaticamente o endereço do animal no cadastro."
         }
       ]
     ],

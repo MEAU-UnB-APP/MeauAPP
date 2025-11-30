@@ -13,6 +13,7 @@ import {
   StatusBar 
 } from 'react-native';
 import { PetCard } from '../../components/PetCard';
+import { LocationMap } from '../../components/LocationMap';
 import { Animal } from '../../types/index'; 
 import { db } from '../../config/firebase'; 
 import { collection, query, where, getDocs } from 'firebase/firestore'; 
@@ -227,6 +228,13 @@ useFocusEffect(
                     <Text style={styles.description}>{selectedAnimal.sobre}</Text>
                   </View>
                 )}
+
+                {/* Localização */}
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Localização</Text>
+                  <LocationMap locationData={selectedAnimal.locationData} petName={selectedAnimal.nome} />
+                </View>
+
                 {/* Galeria de Fotos (se tiver mais fotos) */}
                 {selectedAnimal.fotos && selectedAnimal.fotos.length > 1 && (
                   <View style={styles.section}>

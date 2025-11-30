@@ -17,6 +17,7 @@ import { getAuth } from "firebase/auth";
 import { db } from "../../config/firebase";
 import { PhotoCarousel } from "../../components/PhotoCarousel";
 import { Separator } from "../../components/Separator";
+import { LocationMap } from "../../components/LocationMap";
 import { Animal } from "../../types/index";
 
 type RootStackParamList = {
@@ -105,7 +106,7 @@ export const InformacoesPets: React.FC<{ route: any }> = ({ route }) => {
           ...doc.data(),
         }))
         .filter(
-          (chat) =>
+          (chat: any) =>
             chat._chatContext?.animalId === pet.id &&
             chat._chatContext?.donoId === user.uid
         );
@@ -352,6 +353,12 @@ const handleChatPress = (chat: any) => {
             text={pet.sobre}
           />
         )}
+
+        <View style={styles.section}>
+          <Separator />
+          <Text style={styles.infoLabel}>LOCALIZAÇÃO</Text>
+          <LocationMap locationData={pet.locationData} petName={pet.nome} />
+        </View>
 
         <View style={styles.actionsRow}>
           <Button

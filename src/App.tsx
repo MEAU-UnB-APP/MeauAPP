@@ -11,17 +11,8 @@ import * as React from 'react';
 import { useColorScheme } from 'react-native';
 import { AuthProvider } from './context/AuthContext';
 import  AppRoutes  from "./routes/AppRoutes";
-import * as Notifications from 'expo-notifications';
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+import { auth } from './config/firebase';
+import { registerForPushNotifications, setupNotificationHandlers } from './services/fcmService';
 
 
 Asset.loadAsync([
@@ -46,33 +37,49 @@ export function App() {
 
     const [isSplashVisible, setSplashVisible] = useState(true);
 
+  // Configurar notificações push quando o usuário estiver autenticado
   useEffect(() => {
-    const configureNotifications = async () => {
-      try {
-        if (Platform.OS === 'android') {
-          await Notifications.setNotificationChannelAsync('chat-updates', {
-            name: 'Atualizações de chat',
-            importance: Notifications.AndroidImportance.DEFAULT,
-          });
-        }
-
-        const existingPermissions = await Notifications.getPermissionsAsync();
-        let finalStatus = existingPermissions.status;
-
-        if (existingPermissions.status !== 'granted') {
-          const requested = await Notifications.requestPermissionsAsync();
-          finalStatus = requested.status;
-        }
-
-        if (finalStatus !== 'granted') {
-          console.warn('Permissões de notificação não concedidas.');
-        }
-      } catch (error) {
-        console.error('Erro ao configurar notificações:', error);
+    console.log('🔔 Configurando listeners de autenticação para notificações...');
+    
+    // Listener para mudanças no estado de autenticação
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
+      console.log('🔐 Estado de autenticação mudou. Usuário:', user ? user.uid : 'null');
+      
+      if (user) {
+        console.log('✅ Usuário autenticado detectado. Registrando notificações...');
+        // Registrar token FCM quando o usuário faz login
+        // Adicionar delay para garantir que o documento do usuário existe no Firestore
+        setTimeout(async () => {
+          try {
+            await registerForPushNotifications();
+          } catch (error: any) {
+            console.error('❌ Erro ao registrar notificações no App.tsx:', error);
+          }
+        }, 1000); // 1 segundo de delay
+      } else {
+        console.log('👤 Usuário não autenticado. Notificações não serão registradas.');
       }
-    };
+    });
 
-    configureNotifications();
+    // Configurar handlers de notificações
+    const removeNotificationHandlers = setupNotificationHandlers(
+      (remoteMessage) => {
+        console.log('📬 Notificação recebida em foreground:', remoteMessage);
+        // Aqui você pode adicionar lógica para mostrar notificação customizada
+        // quando o app está em foreground
+      },
+      (remoteMessage) => {
+        console.log('👆 Notificação tocada:', remoteMessage);
+        // Aqui você pode adicionar navegação para o chat específico
+        // baseado nos dados da notificação (remoteMessage.data)
+        // Exemplo: navigation.navigate('IndividualChat', { chatRoomID: remoteMessage.data?.chatId })
+      }
+    );
+
+    return () => {
+      unsubscribeAuth();
+      removeNotificationHandlers();
+    };
   }, []);
 
   useEffect(() => {
