@@ -7,6 +7,15 @@ export interface Metadata {
   timestamp: string; 
 }
 
+export interface LocationData {
+  latitude: number;
+  longitude: number;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  enderecoCompleto?: string;
+}
+
 export interface Animal {
   id: string; 
   dataCadastro: Timestamp; 
@@ -18,7 +27,8 @@ export interface Animal {
   fotoPrincipal: string | null;
   fotos: string[];
   idade: 'Filhote' | 'Adulto' | 'Idoso';
-  localizacao: string;
+  localizacao: string; // Nome do bairro/cidade (para compatibilidade)
+  locationData?: LocationData; // Dados completos de localização
   metadata: Metadata; 
   nome: string;
   porte: 'Pequeno' | 'Médio' | 'Grande';
