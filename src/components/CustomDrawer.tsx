@@ -138,7 +138,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
         </TouchableOpacity>
         {openSection === 'User' && (
           <View style={styles.subItemContainer}>
-            <DrawerItem label="Meu Perfil" onPress={() => navigation.navigate('MeuPerfil')} />
             <DrawerItem label="Meus Pets" onPress={() => navigation.navigate('MeusPets')} />
             <DrawerItem label="Favoritos" onPress={() => navigation.navigate('Favoritos')} />
             <DrawerItem label="Chat" onPress={() => navigation.navigate('Chat')} />
@@ -162,41 +161,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           </View>
         )}
         
-        <TouchableOpacity 
-          style={[styles.sectionHeader, { backgroundColor: '#cfe9e5' }]} 
-          onPress={() => toggleSection('Informações')}
-        >
-          <View style={styles.sectionTitleContainer}>
-            <Icon name="info-outline" size={24} color="#757575" />
-            <Text style={styles.sectionLabel}>Informações</Text>
-          </View>
-          <Icon name={openSection === 'Informações' ? 'expand-less' : 'expand-more'} size={24} color="#757575" />
-        </TouchableOpacity>
-        {openSection === 'Informações' && (
-          <View style={styles.subItemContainer}>
-            <DrawerItem label="Dicas" onPress={() => navigation.navigate('Dicas')} />
-            <DrawerItem label="Eventos" onPress={() => navigation.navigate('Eventos')} />
-            <DrawerItem label="Legislação" onPress={() => navigation.navigate('Legislacao')} />
-            <DrawerItem label="Termo de adoção" onPress={() => navigation.navigate('Termo')} />
-            <DrawerItem label="Histórias de adoção" onPress={() => navigation.navigate('Historias')} />
-          </View>
-        )}
-
-        <TouchableOpacity 
-          style={[styles.sectionHeader, { backgroundColor: '#e6e7e8' }]} 
-          onPress={() => toggleSection('Configuração')}
-        >
-          <View style={styles.sectionTitleContainer}>
-            <Icon name="settings" size={24} color="#757575" />
-            <Text style={styles.sectionLabel}>Configuração</Text>
-          </View>
-          <Icon name={openSection === 'Configuração' ? 'expand-less' : 'expand-more'} size={24} color="#757575" />
-        </TouchableOpacity>
-        {openSection === 'Configuração' && (
-          <View style={styles.subItemContainer}>
-            <DrawerItem label="Privacidade" onPress={() => navigation.navigate('Privacidade')} />
-          </View>
-        )}
       </View>
       
       <View style={styles.footer}>
