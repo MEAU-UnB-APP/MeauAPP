@@ -1,5 +1,6 @@
 // AppRoutes.tsx
 import React from "react";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useAuth } from "../context/AuthContext";
 import { AppDrawer } from "../navigation/index";
@@ -13,7 +14,13 @@ const Stack = createNativeStackNavigator();
 export default function AppRoutes() {
   const { user, loading } = useAuth();
 
-  if (loading) return null; // pode exibir um SplashScreen
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#88c9bf" />
+      </View>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -47,4 +54,13 @@ export default function AppRoutes() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+});
 
