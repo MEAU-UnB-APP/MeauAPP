@@ -23,6 +23,11 @@
         "foregroundImage": "./assets/images/Meau_Icone.png",
         "backgroundColor": "#ffffff"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAygQzS698NmvAz1P0rEcf3srrLuAEwbNA"
+        }
+      },
       "package": "com.meauapp",
       "permissions": [
         "CAMERA",
