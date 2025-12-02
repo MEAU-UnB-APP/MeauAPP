@@ -61,25 +61,6 @@ export const sendNewMessageNotification = async ({ chatRoomID, messageText, send
     // 4. Criar mensagem de sistema para notificação
     console.log('💬 [7] Criando mensagem de sistema para notificação...');
     
-    // Adicionar mensagem de sistema indicando notificação
-    const messagesRef = collection(db, 'chats', chatRoomID, 'messages');
-    const systemMessageId = Date.now().toString() + '_notification';
-    
-    await addDoc(messagesRef, {
-      _id: systemMessageId,
-      text: `🔔 Notificação enviada para ${recipientData?.nome || 'usuário'}`,
-      createdAt: serverTimestamp(),
-      user: {
-        _id: 'system',
-        name: 'Sistema',
-      },
-      system: true,
-      _notificationTrigger: true,
-      _debug: {
-        recipientId: otherParticipantId,
-        notificationType: 'NEW_MESSAGE_REAL'
-      }
-    });
 
     // 5. Atualizar chat com última mensagem (já feito pelo IndividualChatScreen)
     console.log('💬 [8] Atualizando dados do chat para acionar Cloud Function...');
