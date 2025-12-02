@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { LocationData } from "../types/index";
 
 export interface LocationMapProps {
@@ -58,6 +58,7 @@ export const LocationMap: React.FC<LocationMapProps> = ({
       )}
       <View style={styles.mapWrapper}>
         <MapView
+          provider={PROVIDER_GOOGLE}
           style={styles.map}
           initialRegion={{
             latitude: latitude,

@@ -6,7 +6,11 @@
   "build": {
     "preview": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "GOOGLE_MAPS_API_KEY": "AIzaSyAygQzS698NmvAz1P0rEcf3srrLuAEwbNA"
       }
     },
     "development": {

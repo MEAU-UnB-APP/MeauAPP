@@ -6,7 +6,7 @@
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "meauapp",
     "ios": {
       "supportsTablet": true,
@@ -35,7 +35,8 @@
         "WRITE_EXTERNAL_STORAGE",
         "ACCESS_MEDIA_LOCATION",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET"
       ]
     },
     "web": {
