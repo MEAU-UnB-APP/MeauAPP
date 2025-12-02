@@ -12,10 +12,15 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { Text, View, Image, StyleSheet } from 'react-native';
+import { Text, View, Image, StyleSheet, Alert } from 'react-native';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { 
+  sendNewMessageNotification, 
+  sendAdoptionApprovedNotification, 
+  sendAdoptionRejectedNotification 
+} from '../../services/notificationService';
 
 type RootStackParamList = {
   IndividualChat: {
@@ -43,9 +48,15 @@ export function IndividualChatScreen() {
   const [animalAdopted, setAnimalAdopted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [dialogRejectionVisible, setDialogRejectionVisible] = useState(false);
   const [otherParticipant, setOtherParticipant] = useState<{
     nome: string;
     fotoPerfil?: string | null;
+    userId: string;
+  } | null>(null);
+  const [animalInfo, setAnimalInfo] = useState<{
+    id: string;
+    nome: string;
   } | null>(null);
   const navigation = useNavigation();
   const route = useRoute<IndividualChatRouteProp>();
@@ -72,6 +83,10 @@ export function IndividualChatScreen() {
             if (animalSnap.exists()) {
               const animalData = animalSnap.data();
               setAnimalAdopted(animalData?.disponivel === false);
+              setAnimalInfo({
+                id: data._chatContext.animalId,
+                nome: animalData?.nome || data._chatContext?.animalName || 'Pet'
+              });
             }
           }
 
@@ -85,11 +100,13 @@ export function IndividualChatScreen() {
               setOtherParticipant({
                 nome: otherData?.nome ?? 'Usuário',
                 fotoPerfil: otherData?.fotoPerfil ?? null,
+                userId: otherId
               });
             } else {
               setOtherParticipant({
                 nome: 'Usuário',
                 fotoPerfil: null,
+                userId: otherId
               });
             }
           } else {
@@ -98,6 +115,7 @@ export function IndividualChatScreen() {
         }
       } catch (error) {
         console.error('Error fetching chat data:', error);
+        Alert.alert('Erro', 'Não foi possível carregar os dados do chat.');
       } finally {
         setLoading(false);
       }
@@ -111,15 +129,25 @@ export function IndividualChatScreen() {
       title: chatTitle,
       headerRight: () => (
         isPetOwner && !animalAdopted ? (
-          <Button 
-            mode="contained" 
-            onPress={() => setDialogVisible(true)}
-            style={{ marginRight: 10, marginTop: 140 }}
-            buttonColor="#4CAF50"
-            textColor="white"
-          >
-            Confirmar Adoção
-          </Button>
+          <View style={{ flexDirection: 'row', marginRight: 10, marginTop: 140 }}>
+            <Button 
+              mode="contained" 
+              onPress={() => setDialogRejectionVisible(true)}
+              style={{ marginRight: 10 }}
+              buttonColor="#ff4444"
+              textColor="white"
+            >
+              Recusar
+            </Button>
+            <Button 
+              mode="contained" 
+              onPress={() => setDialogVisible(true)}
+              buttonColor="#4CAF50"
+              textColor="white"
+            >
+              Aprovar
+            </Button>
+          </View>
         ) : null
       )
     });
@@ -130,6 +158,35 @@ export function IndividualChatScreen() {
     const q = query(messagesRef, orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' && !change.doc.metadata.hasPendingWrites) {
+          const data = change.doc.data() as FirestoreMessage;
+          
+          // Não fazer nada se:
+          // 1. A mensagem for do sistema
+          // 2. O animal já foi adotado
+          if (data.user._id === 'system' || animalAdopted) {
+            return;
+          }
+          
+          // Se a mensagem for do usuário atual, enviar notificação para o outro participante
+          if (data.user._id === user?.uid && otherParticipant) {
+            console.log('💬 Mensagem enviada pelo usuário atual, configurando notificação...');
+            
+            // Chamar função para configurar notificação de nova mensagem
+            sendNewMessageNotification({
+              chatRoomID,
+              messageText: data.text,
+              senderName: user?.displayName || 'Você'
+            }).then(result => {
+              console.log('✅ Notificação de nova mensagem configurada:', result.message);
+            }).catch(error => {
+              console.log('⚠️ Erro ao configurar notificação:', error.message);
+            });
+          }
+        }
+      });
+
       const fetchedMessages = snapshot.docs.map(doc => {
         const data = doc.data() as FirestoreMessage;
         const createdAtValue = (data as any)?.createdAt;
@@ -149,11 +206,12 @@ export function IndividualChatScreen() {
     });
 
     return () => unsubscribe();
-  }, [chatRoomID]);
+  }, [chatRoomID, user, animalAdopted, otherParticipant]);
 
   const handleConfirmAdoption = async () => {
-    if (!chatData?._chatContext?.animalId) {
-      console.log('No animal ID found');
+    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {
+      console.log('No animal ID or other participant found');
+      Alert.alert('Erro', 'Dados incompletos para confirmar adoção.');
       return;
     }
 
@@ -191,40 +249,114 @@ export function IndividualChatScreen() {
       setAnimalAdopted(true);
       setDialogVisible(false);
       
-      setTimeout(() => {
-        console.log('Adoption confirmed successfully!');
-      }, 100);
+      // Chamar função para configurar notificação de adoção aprovada
+      sendAdoptionApprovedNotification({
+        chatRoomID,
+        animalName: animalInfo.nome
+      }).then(result => {
+        console.log('✅ Notificação de adoção aprovada configurada:', result.message);
+        Alert.alert('Sucesso!', 'Adoção confirmada com sucesso!');
+      }).catch(error => {
+        console.log('⚠️ Erro ao configurar notificação:', error.message);
+        Alert.alert('Adoção Confirmada', 'Adoção confirmada, mas a notificação não pôde ser enviada.');
+      });
+
+      console.log('Adoption confirmed successfully!');
 
     } catch (error) {
       console.error('Error confirming adoption:', error);
       setDialogVisible(false);
-      setTimeout(() => {
-        console.log('Error confirming adoption');
-      }, 100);
+      Alert.alert('Erro', 'Não foi possível confirmar a adoção. Tente novamente.');
+    }
+  };
+
+  const handleRejectAdoption = async () => {
+    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {
+      console.log('No animal ID or other participant found');
+      Alert.alert('Erro', 'Dados incompletos para recusar adoção.');
+      return;
+    }
+
+    try {
+      const messagesRef = collection(db, 'chats', chatRoomID, 'messages');
+      await addDoc(messagesRef, {
+        _id: Date.now().toString(),
+        text: `❌ Adoção recusada.`,
+        createdAt: serverTimestamp(),
+        user: {
+          _id: 'system',
+          name: 'Sistema',
+        },
+        system: true,
+      });
+
+      const chatRef = doc(db, 'chats', chatRoomID);
+      await setDoc(chatRef, {
+        lastMessage: `Adoção recusada.`,
+        lastMessageTimestamp: serverTimestamp(),
+        adoptionRejected: true,
+      }, { merge: true });
+
+      setDialogRejectionVisible(false);
+      
+      // Chamar função para configurar notificação de adoção recusada
+      sendAdoptionRejectedNotification({
+        chatRoomID,
+        animalName: animalInfo.nome
+      }).then(result => {
+        console.log('✅ Notificação de adoção recusada configurada:', result.message);
+        Alert.alert('Adoção Recusada', 'A adoção foi recusada com sucesso.');
+      }).catch(error => {
+        console.log('⚠️ Erro ao configurar notificação:', error.message);
+        Alert.alert('Adoção Recusada', 'Adoção recusada, mas a notificação não pôde ser enviada.');
+      });
+
+      console.log('Adoption rejected successfully!');
+
+    } catch (error) {
+      console.error('Error rejecting adoption:', error);
+      setDialogRejectionVisible(false);
+      Alert.alert('Erro', 'Não foi possível recusar a adoção. Tente novamente.');
     }
   };
 
   const onSend = useCallback(async (messages: IMessage[] = []) => {
-    if (!user) return;
+    if (!user) {
+      Alert.alert('Erro', 'Você precisa estar logado para enviar mensagens.');
+      return;
+    }
+
+    if (animalAdopted) {
+      Alert.alert('Animal Adotado', 'Este animal já foi adotado. Não é possível enviar mensagens.');
+      return;
+    }
 
     const messageToSend = messages[0];
     const { text, user: giftedUser } = messageToSend;
 
-    const messagesRef = collection(db, 'chats', chatRoomID, 'messages');
-    await addDoc(messagesRef, {
-      _id: messageToSend._id, 
-      text: text,
-      createdAt: serverTimestamp(), 
-      user: giftedUser, 
-    });
+    try {
+      const messagesRef = collection(db, 'chats', chatRoomID, 'messages');
+      await addDoc(messagesRef, {
+        _id: messageToSend._id, 
+        text: text,
+        createdAt: serverTimestamp(), 
+        user: giftedUser, 
+      });
 
-    const chatRef = doc(db, 'chats', chatRoomID);
-    await setDoc(chatRef, {
-      lastMessage: text,
-      lastMessageTimestamp: serverTimestamp(), 
-    }, { merge: true }); 
+      const chatRef = doc(db, 'chats', chatRoomID);
+      await setDoc(chatRef, {
+        lastMessage: text,
+        lastMessageTimestamp: serverTimestamp(), 
+      }, { merge: true });
 
-  }, [chatRoomID, user]);
+      console.log('📤 Mensagem enviada - Notificação será configurada pelo listener');
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      Alert.alert('Erro', 'Não foi possível enviar a mensagem.');
+    }
+
+  }, [chatRoomID, user, animalAdopted]);
 
   const renderSystemMessage = (props: any) => (
     <View style={{
@@ -289,11 +421,20 @@ export function IndividualChatScreen() {
     />
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Carregando chat...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1 }}>
       <Provider>
 
       <Portal>
+        {/* Diálogo de Confirmação de Adoção */}
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>Confirmar Adoção</Dialog.Title>
           <Dialog.Content>
@@ -316,6 +457,33 @@ export function IndividualChatScreen() {
               buttonColor="#4CAF50"
               >
               Confirmar Adoção
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        {/* Diálogo de Rejeição de Adoção */}
+        <Dialog visible={dialogRejectionVisible} onDismiss={() => setDialogRejectionVisible(false)}>
+          <Dialog.Title>Recusar Adoção</Dialog.Title>
+          <Dialog.Content>
+            <Text
+              style={{ fontSize: 16, color: '#fff' }}
+            >
+              Tem certeza que deseja recusar a adoção deste animal? 
+              {"\n\n"}
+              Esta ação não pode ser desfeita.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDialogRejectionVisible(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onPress={handleRejectAdoption} 
+              textColor="#fff"
+              mode="contained"
+              buttonColor="#ff4444"
+              >
+              Recusar Adoção
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -348,6 +516,7 @@ export function IndividualChatScreen() {
         renderSystemMessage={renderSystemMessage}
         renderAvatar={renderAvatar}
         renderBubble={renderChatBubble}
+        disabled={animalAdopted}
         />
         </Provider>
     </View>
@@ -360,5 +529,10 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
