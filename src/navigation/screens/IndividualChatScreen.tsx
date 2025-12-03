@@ -192,7 +192,7 @@ export function IndividualChatScreen() {
   }, [chatRoomID, user, animalAdopted]);
 
   const handleConfirmAdoption = async () => {
-    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {
+    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo || !user) {
       console.log('No animal ID or other participant found');
       Alert.alert('Erro', 'Dados incompletos para confirmar adoção.');
       return;
@@ -229,21 +229,33 @@ export function IndividualChatScreen() {
         adoptionConfirmed: true,
       }, { merge: true });
 
+      // Criar documento na coleção 'adocoes' para acionar Cloud Function de notificação
+      const adocoesRef = collection(db, 'adocoes');
+      await addDoc(adocoesRef, {
+        status: 'confirmada',
+        interessadoId: chatData._chatContext.interestedId,
+        donoId: user.uid,
+        donoName: user.displayName || 'O dono',
+        animalName: animalInfo.nome,
+        animalId: chatData._chatContext.animalId,
+        chatId: chatRoomID,
+        createdAt: serverTimestamp(),
+      });
+
       setAnimalAdopted(true);
       setDialogVisible(false);
       
-      // Chamar função para configurar notificação de adoção aprovada
+      // Manter a chamada da função antiga para compatibilidade
       sendAdoptionApprovedNotification({
         chatRoomID,
         animalName: animalInfo.nome
       }).then(result => {
         console.log('✅ Notificação de adoção aprovada configurada:', result.message);
-        Alert.alert('Sucesso!', 'Adoção confirmada com sucesso!');
       }).catch(error => {
         console.log('⚠️ Erro ao configurar notificação:', error.message);
-        Alert.alert('Adoção Confirmada', 'Adoção confirmada, mas a notificação não pôde ser enviada.');
       });
 
+      Alert.alert('Sucesso!', 'Adoção confirmada com sucesso!');
       console.log('Adoption confirmed successfully!');
 
     } catch (error) {
@@ -254,7 +266,7 @@ export function IndividualChatScreen() {
   };
 
   const handleRejectAdoption = async () => {
-    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {
+    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo || !user) {
       console.log('No animal ID or other participant found');
       Alert.alert('Erro', 'Dados incompletos para recusar adoção.');
       return;
@@ -280,20 +292,32 @@ export function IndividualChatScreen() {
         adoptionRejected: true,
       }, { merge: true });
 
+      // Criar documento na coleção 'adocoes' para acionar Cloud Function de notificação
+      const adocoesRef = collection(db, 'adocoes');
+      await addDoc(adocoesRef, {
+        status: 'recusada',
+        interessadoId: chatData._chatContext.interestedId,
+        donoId: user.uid,
+        donoName: user.displayName || 'O dono',
+        animalName: animalInfo.nome,
+        animalId: chatData._chatContext.animalId,
+        chatId: chatRoomID,
+        createdAt: serverTimestamp(),
+      });
+
       setDialogRejectionVisible(false);
       
-      // Chamar função para configurar notificação de adoção recusada
+      // Manter a chamada da função antiga para compatibilidade
       sendAdoptionRejectedNotification({
         chatRoomID,
         animalName: animalInfo.nome
       }).then(result => {
         console.log('✅ Notificação de adoção recusada configurada:', result.message);
-        Alert.alert('Adoção Recusada', 'A adoção foi recusada com sucesso.');
       }).catch(error => {
         console.log('⚠️ Erro ao configurar notificação:', error.message);
-        Alert.alert('Adoção Recusada', 'Adoção recusada, mas a notificação não pôde ser enviada.');
       });
 
+      Alert.alert('Adoção Recusada', 'A adoção foi recusada com sucesso.');
       console.log('Adoption rejected successfully!');
 
     } catch (error) {

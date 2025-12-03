@@ -1,15 +1,17 @@
-// functions/index.js
+// functions/index.ts
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
 // Inicializar Firebase Admin
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 /**
  * Cloud Function HTTP para enviar notificações push
  * Esta função pode ser chamada diretamente do seu app React Native
  */
-exports.sendNotification = functions.https.onRequest(async (req, res) => {
+exports.sendNotification = functions.https.onRequest(async (req: any, res: any) => {
   // Configurar CORS
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET, POST');
@@ -51,7 +53,7 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
         click_action: 'FLUTTER_NOTIFICATION_CLICK'
       },
       android: {
-        priority: 'high',
+        priority: 'high' as const,
         notification: {
           channel_id: data?.type || 'default',
           sound: notification?.sound || 'default',
@@ -78,7 +80,7 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
     
     console.log('✅ Notificação enviada com sucesso:', response);
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: 'Notificação enviada com sucesso',
       messageId: response,
@@ -88,15 +90,17 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
         body: notification?.body
       }
     });
+    return;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro ao enviar notificação:', error);
     
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: error.message,
-      code: error.code || 'UNKNOWN_ERROR'
+      error: error?.message || 'Erro desconhecido',
+      code: error?.code || 'UNKNOWN_ERROR'
     });
+    return;
   }
 });
 
@@ -105,9 +109,14 @@ exports.sendNotification = functions.https.onRequest(async (req, res) => {
  * Trigger: onCreate na coleção 'chats'
  */
 exports.onNewChatCreated = functions.firestore
-  .document('chats/{chatId}')
-  .onCreate(async (snap, context) => {
+  .onDocumentCreated('chats/{chatId}', async (event: any) => {
+    const snap = event.data;
+    const context = event;
     try {
+      if (!snap) {
+        console.log('⚠️ Dados do chat não encontrados');
+        return null;
+      }
       const chatData = snap.data();
       const chatId = context.params.chatId;
 
@@ -235,10 +244,20 @@ exports.onNewChatCreated = functions.firestore
  * É acionada automaticamente quando uma nova mensagem é criada
  */
 exports.notifyNewMessage = functions.firestore
-  .document('chats/{chatId}/messages/{messageId}')
-  .onCreate(async (snap, context) => {
+  .onDocumentCreated('chats/{chatId}/messages/{messageId}', async (event: any) => {
+    const snap = event.data;
+    const context = event;
     try {
+      if (!snap) {
+        console.log('Dados da mensagem não encontrados');
+        return null;
+      }
       const messageData = snap.data();
+      
+      if (!messageData) {
+        console.log('Dados da mensagem não encontrados');
+        return null;
+      }
       const { chatId, messageId } = context.params;
 
       console.log('💬 Nova mensagem detectada:', { chatId, messageId });
@@ -269,7 +288,7 @@ exports.notifyNewMessage = functions.firestore
       
       // Encontrar o receptor (usuário que não enviou a mensagem)
       const senderId = messageData.user?._id;
-      const receiverId = participants.find(id => id !== senderId);
+      const receiverId = participants.find((id: string) => id !== senderId);
 
       if (!receiverId) {
         console.log('Receptor não encontrado');
@@ -369,11 +388,21 @@ exports.notifyNewMessage = functions.firestore
  * É acionada automaticamente quando um registro de adoção é criado
  */
 exports.notifyAdoptionStatus = functions.firestore
-  .document('adocoes/{adocaoId}')
-  .onCreate(async (snap, context) => {
+  .onDocumentCreated('adocoes/{adocaoId}', async (event: any) => {
+    const snap = event.data;
+    const context = event;
     try {
+      if (!snap) {
+        console.log('Dados de adoção não encontrados');
+        return null;
+      }
       const adoptionData = snap.data();
       const { adocaoId } = context.params;
+
+      if (!adoptionData) {
+        console.log('Dados de adoção não encontrados');
+        return null;
+      }
 
       console.log('🐾 Nova adoção detectada:', { adocaoId, status: adoptionData.status });
 
@@ -413,7 +442,17 @@ exports.notifyAdoptionStatus = functions.firestore
         return null;
       }
 
-      let notificationConfig = {};
+      interface NotificationConfig {
+        title: string;
+        body: string;
+        sound: string;
+      }
+
+      let notificationConfig: NotificationConfig = {
+        title: '',
+        body: '',
+        sound: 'default'
+      };
       
       if (status === 'confirmada') {
         notificationConfig = {
@@ -481,10 +520,20 @@ exports.notifyAdoptionStatus = functions.firestore
  * Função para marcar outras adoções como recusadas quando uma adoção é confirmada
  */
 exports.autoDenyOtherAdoptions = functions.firestore
-  .document('adocoes/{adocaoId}')
-  .onCreate(async (snap, context) => {
+  .onDocumentCreated('adocoes/{adocaoId}', async (event: any) => {
+    const snap = event.data;
+    const context = event;
     try {
+      if (!snap) {
+        console.log('Dados de adoção não encontrados');
+        return null;
+      }
       const adoptionData = snap.data();
+      
+      if (!adoptionData) {
+        console.log('Dados de adoção não encontrados');
+        return null;
+      }
       const { adocaoId } = context.params;
 
       // Apenas processar se for uma adoção confirmada
@@ -493,7 +542,6 @@ exports.autoDenyOtherAdoptions = functions.firestore
       }
 
       const animalId = adoptionData.animalId;
-      const confirmedChatId = adoptionData.chatId;
 
       if (!animalId) {
         console.log('Animal ID não encontrado');
@@ -517,10 +565,15 @@ exports.autoDenyOtherAdoptions = functions.firestore
       console.log(`📝 Encontradas ${querySnapshot.size} adoções pendentes para marcar como recusadas`);
 
       const batch = admin.firestore().batch();
-      const updates = [];
+      interface UpdateInfo {
+        adoptionId: string;
+        interessadoId: string;
+        interessadoName: string;
+      }
+      const updates: UpdateInfo[] = [];
 
       // Marcar cada adoção pendente como recusada automaticamente
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach((doc: any) => {
         const adoptionDoc = doc.data();
         
         // Pular a adoção que foi confirmada
@@ -607,7 +660,7 @@ exports.autoDenyOtherAdoptions = functions.firestore
 /**
  * Função para teste de notificações
  */
-exports.testNotification = functions.https.onRequest(async (req, res) => {
+exports.testNotification = functions.https.onRequest(async (req: any, res: any) => {
   try {
     const { userId, type = 'test' } = req.body;
 
@@ -630,7 +683,13 @@ exports.testNotification = functions.https.onRequest(async (req, res) => {
       return res.status(400).json({ error: 'Usuário não tem token FCM' });
     }
 
-    const notificationConfigs = {
+    interface NotificationConfigType {
+      title: string;
+      body: string;
+      sound: string;
+    }
+
+    const notificationConfigs: Record<string, NotificationConfigType> = {
       test: {
         title: '🧪 Teste de Notificação',
         body: 'Esta é uma notificação de teste do sistema!',
@@ -653,7 +712,7 @@ exports.testNotification = functions.https.onRequest(async (req, res) => {
       }
     };
 
-    const config = notificationConfigs[type] || notificationConfigs.test;
+    const config = notificationConfigs[type as string] || notificationConfigs.test;
 
     const payload = {
       token: fcmToken,
@@ -668,7 +727,7 @@ exports.testNotification = functions.https.onRequest(async (req, res) => {
         click_action: 'FLUTTER_NOTIFICATION_CLICK'
       },
       android: {
-        priority: 'high',
+        priority: 'high' as const,
         notification: {
           channel_id: 'testes',
           sound: config.sound,
@@ -681,26 +740,28 @@ exports.testNotification = functions.https.onRequest(async (req, res) => {
 
     const response = await admin.messaging().send(payload);
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: 'Notificação de teste enviada',
       messageId: response,
       type: type
     });
+    return;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro no teste:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: error.message
+      error: error?.message || 'Erro desconhecido'
     });
+    return;
   }
 });
 
 /**
  * Função para enviar notificação de lembrete
  */
-exports.sendReminderNotification = functions.https.onRequest(async (req, res) => {
+exports.sendReminderNotification = functions.https.onRequest(async (req: any, res: any) => {
   try {
     const { userId, title, body, data } = req.body;
 
@@ -738,7 +799,7 @@ exports.sendReminderNotification = functions.https.onRequest(async (req, res) =>
         click_action: 'FLUTTER_NOTIFICATION_CLICK'
       },
       android: {
-        priority: 'high',
+        priority: 'high' as const,
         notification: {
           channel_id: 'lembretes',
           sound: 'default',
@@ -758,17 +819,19 @@ exports.sendReminderNotification = functions.https.onRequest(async (req, res) =>
 
     const response = await admin.messaging().send(payload);
     
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       message: 'Notificação de lembrete enviada',
       messageId: response
     });
+    return;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Erro ao enviar lembrete:', error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: error.message
+      error: error?.message || 'Erro desconhecido'
     });
+    return;
   }
 });
