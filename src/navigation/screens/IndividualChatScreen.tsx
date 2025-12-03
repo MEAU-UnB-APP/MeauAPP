@@ -12,7 +12,7 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { Text, View, Image, StyleSheet, Alert } from 'react-native';
+import { Text, View, Image, StyleSheet, Alert, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -129,13 +129,14 @@ export function IndividualChatScreen() {
       title: chatTitle,
       headerRight: () => (
         isPetOwner && !animalAdopted ? (
-          <View style={{ flexDirection: 'row', marginRight: 10, marginTop: 140 }}>
+          <View style={{ flexDirection: 'row', marginRight: 10 }}>
             <Button 
               mode="contained" 
               onPress={() => setDialogRejectionVisible(true)}
               style={{ marginRight: 10 }}
               buttonColor="#ff4444"
               textColor="white"
+              compact={true}
             >
               Recusar
             </Button>
@@ -144,6 +145,7 @@ export function IndividualChatScreen() {
               onPress={() => setDialogVisible(true)}
               buttonColor="#4CAF50"
               textColor="white"
+              compact={true}
             >
               Aprovar
             </Button>
@@ -430,96 +432,101 @@ export function IndividualChatScreen() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <Provider>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+        >
+          <Portal>
+            {/* Diálogo de Confirmação de Adoção */}
+            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+              <Dialog.Title>Confirmar Adoção</Dialog.Title>
+              <Dialog.Content>
+                <Text
+                  style={{ fontSize: 16, color: '#fff' }}
+                >
+                  Tem certeza que deseja confirmar a adoção deste animal? 
+                  {"\n\n"}
+                  Esta ação não pode ser desfeita.
+                </Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDialogVisible(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onPress={handleConfirmAdoption} 
+                  textColor="#fff"
+                  mode="contained"
+                  buttonColor="#4CAF50"
+                  >
+                  Confirmar Adoção
+                </Button>
+              </Dialog.Actions>
+            </Dialog>
 
-      <Portal>
-        {/* Diálogo de Confirmação de Adoção */}
-        <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-          <Dialog.Title>Confirmar Adoção</Dialog.Title>
-          <Dialog.Content>
-            <Text
-              style={{ fontSize: 16, color: '#fff' }}
-            >
-              Tem certeza que deseja confirmar a adoção deste animal? 
-              {"\n\n"}
-              Esta ação não pode ser desfeita.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onPress={handleConfirmAdoption} 
-              textColor="#fff"
-              mode="contained"
-              buttonColor="#4CAF50"
-              >
-              Confirmar Adoção
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
+            {/* Diálogo de Rejeição de Adoção */}
+            <Dialog visible={dialogRejectionVisible} onDismiss={() => setDialogRejectionVisible(false)}>
+              <Dialog.Title>Recusar Adoção</Dialog.Title>
+              <Dialog.Content>
+                <Text
+                  style={{ fontSize: 16, color: '#fff' }}
+                >
+                  Tem certeza que deseja recusar a adoção deste animal? 
+                  {"\n\n"}
+                  Esta ação não pode ser desfeita.
+                </Text>
+              </Dialog.Content>
+              <Dialog.Actions>
+                <Button onPress={() => setDialogRejectionVisible(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onPress={handleRejectAdoption} 
+                  textColor="#fff"
+                  mode="contained"
+                  buttonColor="#ff4444"
+                  >
+                  Recusar Adoção
+                </Button>
+              </Dialog.Actions>
+            </Dialog>
+          </Portal>
 
-        {/* Diálogo de Rejeição de Adoção */}
-        <Dialog visible={dialogRejectionVisible} onDismiss={() => setDialogRejectionVisible(false)}>
-          <Dialog.Title>Recusar Adoção</Dialog.Title>
-          <Dialog.Content>
-            <Text
-              style={{ fontSize: 16, color: '#fff' }}
-            >
-              Tem certeza que deseja recusar a adoção deste animal? 
-              {"\n\n"}
-              Esta ação não pode ser desfeita.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogRejectionVisible(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onPress={handleRejectAdoption} 
-              textColor="#fff"
-              mode="contained"
-              buttonColor="#ff4444"
-              >
-              Recusar Adoção
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
-      {animalAdopted && (
-        <View style={{
-          backgroundColor: '#4CAF50',
-          padding: 15,
-          alignItems: 'center',
-        }}>
-          <Text style={{
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: 16,
-          }}>
-            🎉 Este animal foi adotado!
-          </Text>
-        </View>
-      )}
-      
-      <GiftedChat
-        messages={messages}
-        onSend={messages => onSend(messages)}
-        user={{
-          _id: user?.uid || 'user_anonimo',
-          name: user?.displayName || 'Você', 
-        }}
-        placeholder={animalAdopted ? "Animal já adotado" : "Digite sua mensagem..."}
-        renderSystemMessage={renderSystemMessage}
-        renderAvatar={renderAvatar}
-        renderBubble={renderChatBubble}
-        disabled={animalAdopted}
-        />
-        </Provider>
-    </View>
+          {animalAdopted && (
+            <View style={{
+              backgroundColor: '#4CAF50',
+              padding: 15,
+              alignItems: 'center',
+            }}>
+              <Text style={{
+                color: 'white',
+                fontWeight: 'bold',
+                fontSize: 16,
+              }}>
+                🎉 Este animal foi adotado!
+              </Text>
+            </View>
+          )}
+          
+          <GiftedChat
+            messages={messages}
+            onSend={animalAdopted ? () => {} : (messages => onSend(messages))}
+            user={{
+              _id: user?.uid || 'user_anonimo',
+              name: user?.displayName || 'Você', 
+            }}
+            placeholder={animalAdopted ? "Animal já adotado" : "Digite sua mensagem..."}
+            renderSystemMessage={renderSystemMessage}
+            renderAvatar={renderAvatar}
+            renderBubble={renderChatBubble}
+            textInputProps={{
+              editable: !animalAdopted,
+            }}
+            />
+        </KeyboardAvoidingView>
+      </Provider>
+    </SafeAreaView>
   );
 }
 
