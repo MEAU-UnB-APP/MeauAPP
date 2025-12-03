@@ -305,6 +305,7 @@ exports.notifyNewMessage = functions.firestore
         messageText.substring(0, 50) + '...' : messageText;
 
       // Configurar notificação
+      // IMPORTANTE: Incluir tanto 'notification' quanto 'data' para funcionar em foreground e background
       const payload = {
         token: fcmToken,
         notification: {
@@ -316,6 +317,8 @@ exports.notifyNewMessage = functions.firestore
           screenToOpen: 'ChatScreen',
           chatId: chatId,
           senderId: senderId,
+          messageText: truncatedMessage,
+          senderName: senderName,
           timestamp: new Date().toISOString(),
           click_action: 'FLUTTER_NOTIFICATION_CLICK'
         },
@@ -326,14 +329,18 @@ exports.notifyNewMessage = functions.firestore
             sound: 'default',
             icon: 'ic_notification',
             color: '#2196F3',
-            tag: `chat_${chatId}`
+            tag: `chat_${chatId}`,
+            // Garantir que notificação aparece mesmo em foreground
+            visibility: 'public',
+            importance: 'high'
           }
         },
         apns: {
           payload: {
             aps: {
               sound: 'default',
-              badge: 1
+              badge: 1,
+              contentAvailable: true
             }
           }
         }

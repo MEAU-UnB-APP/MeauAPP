@@ -17,7 +17,6 @@ import { Button, Dialog, Portal, Provider } from 'react-native-paper';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { 
-  sendNewMessageNotification, 
   sendAdoptionApprovedNotification, 
   sendAdoptionRejectedNotification 
 } from '../../services/notificationService';
@@ -164,27 +163,9 @@ export function IndividualChatScreen() {
         if (change.type === 'added' && !change.doc.metadata.hasPendingWrites) {
           const data = change.doc.data() as FirestoreMessage;
           
-          // Não fazer nada se:
-          // 1. A mensagem for do sistema
-          // 2. O animal já foi adotado
+          // Ignorar mensagens do sistema ou quando animal já foi adotado
           if (data.user._id === 'system' || animalAdopted) {
             return;
-          }
-          
-          // Se a mensagem for do usuário atual, enviar notificação para o outro participante
-          if (data.user._id === user?.uid && otherParticipant) {
-            console.log('💬 Mensagem enviada pelo usuário atual, configurando notificação...');
-            
-            // Chamar função para configurar notificação de nova mensagem
-            sendNewMessageNotification({
-              chatRoomID,
-              messageText: data.text,
-              senderName: user?.displayName || 'Você'
-            }).then(result => {
-              console.log('✅ Notificação de nova mensagem configurada:', result.message);
-            }).catch(error => {
-              console.log('⚠️ Erro ao configurar notificação:', error.message);
-            });
           }
         }
       });
@@ -208,7 +189,7 @@ export function IndividualChatScreen() {
     });
 
     return () => unsubscribe();
-  }, [chatRoomID, user, animalAdopted, otherParticipant]);
+  }, [chatRoomID, user, animalAdopted]);
 
   const handleConfirmAdoption = async () => {
     if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {

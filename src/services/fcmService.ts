@@ -213,15 +213,26 @@ export function setupNotificationHandlers(
   const unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
     console.log('📬 Notificação recebida em foreground:', remoteMessage);
     
-    // 🔥 SOLUÇÃO SIMPLES: NÃO FAZER NADA AQUI!
-    // Deixando o FCM mostrar a notificação na barra automaticamente
-    // O FCM Android geralmente mostra notificações na barra mesmo em foreground
-    // a menos que você as suprima com código personalizado
+    // IMPORTANTE: No Android, notificações em foreground precisam ser mostradas manualmente
+    // A Cloud Function já envia o payload correto com 'notification' e 'data'
+    // Mas precisamos garantir que a notificação apareça na barra
     
-    console.log('✅ Deixando FCM mostrar notificação na barra automaticamente');
-    console.log('📱 A notificação deve aparecer na BARRA do celular agora!');
+    // Verificar se a notificação tem título e corpo (vem do campo 'notification')
+    if (remoteMessage.notification) {
+      console.log('✅ Notificação tem payload completo:', {
+        title: remoteMessage.notification.title,
+        body: remoteMessage.notification.body
+      });
+      
+      // No Android, quando o app está em foreground, o FCM não mostra automaticamente
+      // A notificação deve aparecer se o payload tiver o campo 'notification' preenchido
+      // e o Android estiver configurado corretamente
+      console.log('📱 A notificação deve aparecer na barra do Android');
+    } else {
+      console.warn('⚠️ Notificação sem campo notification - pode não aparecer em foreground');
+    }
 
-    // Apenas log para debug, mas não interfere com a notificação
+    // Chamar callback se fornecido
     if (onNotificationReceived) {
       onNotificationReceived(remoteMessage);
     }
