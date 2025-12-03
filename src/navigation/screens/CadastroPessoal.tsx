@@ -173,6 +173,8 @@ export function CadastroPessoal() {
       };
 
       await setDoc(userDocRef, userData);
+      
+      console.log('✅ Documento do usuário criado no Firestore');
 
       if (fotoPerfil) {
         try {
@@ -211,16 +213,22 @@ export function CadastroPessoal() {
       setConfirmPassword('');
       setFotoPerfil(null);
 
+      // Aguardar um pouco para garantir que o documento do usuário foi criado no Firestore
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Registrar token FCM após cadastro bem-sucedido
-      // Adicionar delay para garantir que o documento do usuário foi criado no Firestore
-      setTimeout(async () => {
-        try {
-          await registerForPushNotifications();
-        } catch (notificationError: any) {
-          console.error('❌ Erro ao registrar notificações no cadastro:', notificationError);
-          // Não interrompe o fluxo se falhar
+      try {
+        console.log('🔔 Registrando notificações após cadastro...');
+        const token = await registerForPushNotifications();
+        if (token) {
+          console.log('✅ Token FCM registrado com sucesso após cadastro');
+        } else {
+          console.warn('⚠️ Token FCM não foi obtido após cadastro');
         }
-      }, 2000); // 2 segundos de delay
+      } catch (notificationError: any) {
+        console.error('❌ Erro ao registrar notificações no cadastro:', notificationError);
+        // Não interrompe o fluxo se falhar
+      }
 
       Alert.alert(
         "Sucesso!", 

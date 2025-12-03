@@ -23,16 +23,22 @@ export function Login() {
     try {
       await signInWithEmailAndPassword(auth, username, password);
       
+      // Aguardar um pouco para garantir que o Firebase Auth está pronto
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Registrar token FCM após login bem-sucedido
-      // Adicionar delay para garantir que o documento do usuário existe no Firestore
-      setTimeout(async () => {
-        try {
-          await registerForPushNotifications();
-        } catch (notificationError: any) {
-          console.error('❌ Erro ao registrar notificações no login:', notificationError);
-          // Não interrompe o fluxo se falhar
+      try {
+        console.log('🔔 Registrando notificações após login...');
+        const token = await registerForPushNotifications();
+        if (token) {
+          console.log('✅ Token FCM registrado com sucesso após login');
+        } else {
+          console.warn('⚠️ Token FCM não foi obtido após login');
         }
-      }, 1500); // 1.5 segundos de delay
+      } catch (notificationError: any) {
+        console.error('❌ Erro ao registrar notificações no login:', notificationError);
+        // Não interrompe o fluxo se falhar
+      }
       
       navigation.reset({
         index: 0,

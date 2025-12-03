@@ -247,6 +247,30 @@ export async function initializeNotificationChannels(): Promise<void> {
 }
 
 /**
+ * Garante que um canal de notificação existe, criando se necessário
+ */
+async function ensureNotificationChannel(channelId: string, channelName: string): Promise<void> {
+  if (Platform.OS !== 'android' || !notifee) {
+    return;
+  }
+
+  try {
+    await notifee.createChannel({
+      id: channelId,
+      name: channelName,
+      description: `Canal para ${channelName}`,
+      sound: 'default',
+      importance: 4, // High importance
+      vibration: true,
+      vibrationPattern: [300, 500],
+    });
+    console.log(`✅ Canal '${channelId}' garantido`);
+  } catch (error: any) {
+    console.error(`❌ Erro ao garantir canal '${channelId}':`, error);
+  }
+}
+
+/**
  * Configura handlers para notificações recebidas
  * Usa Notifee para mostrar notificações em foreground
  * @param {Function} onNotificationReceived - Callback quando notificação é recebida em foreground
@@ -263,14 +287,25 @@ export function setupNotificationHandlers(
 
   console.log('📱 Configurando handlers de notificações...');
 
-  // Inicializar canais de notificação no Android
+  // Inicializar canais de notificação no Android AGUARDANDO a conclusão
   if (Platform.OS === 'android' && notifee) {
-    initializeNotificationChannels();
+    initializeNotificationChannels().then(() => {
+      console.log('✅ Canais de notificação prontos para uso');
+    }).catch((error: any) => {
+      console.error('❌ Erro ao inicializar canais:', error);
+    });
   }
 
   // Handler para notificações recebidas quando app está em foreground
   const unsubscribeForeground = messaging().onMessage(async (remoteMessage: any) => {
-    console.log('📬 Notificação recebida em foreground:', remoteMessage);
+    console.log('📬 [FOREGROUND] Notificação recebida:', {
+      hasNotification: !!remoteMessage.notification,
+      hasData: !!remoteMessage.data,
+      notificationTitle: remoteMessage.notification?.title,
+      notificationBody: remoteMessage.notification?.body,
+      dataType: remoteMessage.data?.type,
+      notifeeAvailable: !!notifee
+    });
     
     // Usar Notifee para mostrar notificações quando o app está em foreground
     if (remoteMessage.notification && notifee) {
@@ -278,47 +313,56 @@ export function setupNotificationHandlers(
         const notification = remoteMessage.notification;
         const data = remoteMessage.data || {};
 
-        // Criar canal de notificação no Android (necessário para Android 8+)
-        let channelId = 'mensagens'; // Canal padrão para mensagens
-        
         // Determinar o canal baseado no tipo de notificação
+        let channelId = 'mensagens';
+        let channelName = 'Mensagens';
+        
         if (data.type === 'novo_chat') {
           channelId = 'novos_chats';
+          channelName = 'Novos Chats';
         } else if (data.type === 'nova_mensagem') {
           channelId = 'mensagens';
+          channelName = 'Mensagens';
         } else if (data.type === 'adocao_confirmada' || data.type === 'adocao_recusada') {
           channelId = 'adocoes';
+          channelName = 'Adoções';
         }
 
-        // Canais já devem estar criados pela função initializeNotificationChannels
-        // Mas criar aqui também como fallback caso não tenham sido criados
+        console.log(`📱 [FOREGROUND] Usando canal: ${channelId} para tipo: ${data.type || 'desconhecido'}`);
+
+        // Garantir que o canal existe antes de mostrar notificação (criar como fallback)
+        await ensureNotificationChannel(channelId, channelName);
 
         // Exibir notificação local usando Notifee
+        console.log('📱 [FOREGROUND] Exibindo notificação com Notifee...');
         await notifee.displayNotification({
           title: notification.title || 'Nova Notificação',
           body: notification.body || '',
           data: data,
           android: {
             channelId: channelId,
-            smallIcon: 'ic_notification',
             pressAction: {
               id: 'default',
             },
             sound: 'default',
             vibrationPattern: [300, 500],
-            importance: 4, // High importance
           },
         });
 
-        console.log('✅ Notificação exibida em foreground usando Notifee');
+        console.log('✅ [FOREGROUND] Notificação exibida com sucesso na barra usando Notifee');
       } catch (error: any) {
-        console.error('❌ Erro ao exibir notificação com Notifee:', error);
-        console.warn('⚠️ Tentando mostrar notificação de forma alternativa...');
+        console.error('❌ [FOREGROUND] Erro ao exibir notificação com Notifee:', error);
+        console.error('❌ [FOREGROUND] Detalhes do erro:', {
+          message: error?.message,
+          code: error?.code,
+          stack: error?.stack
+        });
       }
     } else if (!remoteMessage.notification) {
-      console.warn('⚠️ Notificação sem campo notification - não será exibida');
+      console.warn('⚠️ [FOREGROUND] Notificação sem campo notification - não será exibida');
+      console.warn('⚠️ [FOREGROUND] Payload recebido:', JSON.stringify(remoteMessage, null, 2));
     } else if (!notifee) {
-      console.warn('⚠️ Notifee não disponível - notificação pode não aparecer em foreground');
+      console.warn('⚠️ [FOREGROUND] Notifee não disponível - notificação não aparecerá em foreground');
     }
 
     // Chamar callback se fornecido

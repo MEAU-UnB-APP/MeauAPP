@@ -348,10 +348,7 @@ exports.notifyNewMessage = functions.firestore
             sound: 'default',
             icon: 'ic_notification',
             color: '#2196F3',
-            tag: `chat_${chatId}`,
-            // Garantir que notificação aparece mesmo em foreground
-            visibility: 'public',
-            importance: 'high'
+            tag: `chat_${chatId}`
           }
         },
         apns: {

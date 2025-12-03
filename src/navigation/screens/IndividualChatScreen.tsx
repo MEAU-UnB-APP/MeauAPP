@@ -12,8 +12,9 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { Text, View, Image, StyleSheet, Alert, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, View, Image, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { 
@@ -59,6 +60,7 @@ export function IndividualChatScreen() {
   } | null>(null);
   const navigation = useNavigation();
   const route = useRoute<IndividualChatRouteProp>();
+  const insets = useSafeAreaInsets();
 
   const { chatRoomID, chatTitle } = route.params;
   const user = auth.currentUser;
@@ -128,26 +130,30 @@ export function IndividualChatScreen() {
       title: chatTitle,
       headerRight: () => (
         isPetOwner && !animalAdopted ? (
-          <View style={{ flexDirection: 'row', marginRight: 10 }}>
-            <Button 
-              mode="contained" 
+          <View style={{ flexDirection: 'row', marginRight: 8, alignItems: 'center' }}>
+            <TouchableOpacity
               onPress={() => setDialogRejectionVisible(true)}
-              style={{ marginRight: 10 }}
-              buttonColor="#ff4444"
-              textColor="white"
-              compact={true}
+              style={{
+                backgroundColor: '#ff4444',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 4,
+                marginRight: 6,
+              }}
             >
-              Recusar
-            </Button>
-            <Button 
-              mode="contained" 
+              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Recusar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => setDialogVisible(true)}
-              buttonColor="#4CAF50"
-              textColor="white"
-              compact={true}
+              style={{
+                backgroundColor: '#4CAF50',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 4,
+              }}
             >
-              Aprovar
-            </Button>
+              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Aprovar</Text>
+            </TouchableOpacity>
           </View>
         ) : null
       )
@@ -437,11 +443,9 @@ export function IndividualChatScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingTop: insets.top }}>
       <Provider>
-        <KeyboardAvoidingView 
-          style={{ flex: 1 }}
-        >
+        <View style={{ flex: 1 }}>
           <Portal>
             {/* Diálogo de Confirmação de Adoção */}
             <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
@@ -528,10 +532,11 @@ export function IndividualChatScreen() {
             textInputProps={{
               editable: !animalAdopted,
             }}
+            bottomOffset={insets.bottom}
             />
-        </KeyboardAvoidingView>
+        </View>
       </Provider>
-    </SafeAreaView>
+    </View>
   );
 }
 
