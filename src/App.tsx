@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import { Assets as NavigationAssets } from '@react-navigation/elements';
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { Asset } from 'expo-asset';
 import { useFonts } from 'expo-font';
 import { useEffect, useState } from 'react';
@@ -13,6 +13,7 @@ import { AuthProvider } from './context/AuthContext';
 import  AppRoutes  from "./routes/AppRoutes";
 import { auth } from './config/firebase';
 import { registerForPushNotifications, setupNotificationHandlers } from './services/fcmService';
+import { setNavigationRef, handleNotificationNavigation, setupNotifeeNavigationHandlers } from './services/notificationNavigation';
 import { Colors } from './config/colors';
 
 Asset.loadAsync([
@@ -27,6 +28,7 @@ const prefix = createURL('/');
 
 export function App() {
   const colorScheme = useColorScheme();
+  const navigationRef = useNavigationContainerRef();
 
   const [loaded] = useFonts({
     'SpaceMono': require('./assets/fonts/SpaceMono-Regular.ttf'),
@@ -35,7 +37,7 @@ export function App() {
     'Roboto-Medium': require('./assets/fonts/Roboto-Medium.ttf'),   
   });
 
-    const [isSplashVisible, setSplashVisible] = useState(true);
+  const [isSplashVisible, setSplashVisible] = useState(true);
 
   // Configurar notificações push quando o usuário estiver autenticado
   useEffect(() => {
@@ -70,9 +72,8 @@ export function App() {
       },
       (remoteMessage) => {
         console.log('👆 Notificação tocada:', remoteMessage);
-        // Aqui você pode adicionar navegação para o chat específico
-        // baseado nos dados da notificação (remoteMessage.data)
-        // Exemplo: navigation.navigate('IndividualChat', { chatRoomID: remoteMessage.data?.chatId })
+        // Navegar diretamente para o chat quando a notificação for tocada
+        handleNotificationNavigation(remoteMessage);
       }
     );
 
@@ -111,9 +112,16 @@ export function App() {
 
   const theme = colorScheme === 'dark' ? DarkTheme : DefaultTheme
 
+  // Configurar referência de navegação e handlers do Notifee
+  useEffect(() => {
+    setNavigationRef(navigationRef);
+    setupNotifeeNavigationHandlers();
+  }, [navigationRef]);
+
   return (
     <AuthProvider>
         <NavigationContainer
+            ref={navigationRef}
             theme={theme}
             linking={{
               enabled: true,
@@ -121,6 +129,7 @@ export function App() {
             }}
             onReady={() => {
                 SplashScreen.hideAsync();
+                setNavigationRef(navigationRef);
             }}
         >
             <AppRoutes />
