@@ -53,7 +53,7 @@ export function AppDrawer() {
         component={Adotar}
         options={{
           title: "Adotar",
-          headerStyle: { backgroundColor: Colors.verde },
+          headerStyle: { backgroundColor: Colors.roxo },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,

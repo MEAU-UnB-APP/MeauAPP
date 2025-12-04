@@ -148,7 +148,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           label="Adotar um pet" 
           onPress={() => navigation.navigate('Adotar')}
           iconName="pets"
-          backgroundColor={Colors.verde}
+          backgroundColor={Colors.roxo}
         />
       </View>
       
@@ -216,13 +216,13 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     width: '100%',
-    backgroundColor: Colors.roxo,
+    backgroundColor: Colors.verde,
     paddingVertical: 12,
     alignItems: 'center',
     alignSelf: 'stretch',
   },
   logoutButtonText: {
-    color: Colors.branco,
+    color: Colors.roxoclaro,
     fontFamily: 'Roboto-Medium',
     fontSize: 14,
   },

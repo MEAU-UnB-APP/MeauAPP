@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Card, Text } from 'react-native-paper';
-import { Animal } from '../types';
+import { Animal } from '../types/index';
 import ChatButton from './ChatButton';
+import { Colors } from '../config/colors';
 
 const CARD = {
   width: 344,
@@ -25,14 +26,13 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
       <Card style={styles.card} mode="elevated">
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>{pet.nome}</Text>
-
           <View style={styles.iconContainer}>
             <ChatButton
               animalId={pet.id}
               animalName={pet.nome}
               donoId={pet.dono}
               size={24}
-              iconColor="#434343"
+              iconColor={Colors.branco}
             />
           </View>
         </View>
@@ -58,58 +58,64 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
 const styles = StyleSheet.create({
   card: {
     width: CARD.width,
-    height: CARD.height,
+    minHeight: CARD.height,
     alignSelf: 'center',
     marginVertical: 8,
-    borderRadius: 10,
+    borderRadius: 20,
+    backgroundColor: Colors.roxoclaro,
+    overflow: 'hidden',
   },
   cardHeader: {
-    height: CARD.headerH,
-    backgroundColor: '#fee29b',
-    paddingHorizontal: 8,
+    backgroundColor: Colors.roxo,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   cardTitle: {
-    fontSize: 16,
-    color: '#434343',
+    fontSize: 20,
+    color: Colors.branco,
     fontFamily: 'Roboto-Medium',
   },
   iconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 16,
   },
   image: {
     width: CARD.width,
     height: CARD.imageH,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: Colors.cinza,
   },
   footer: {
-    height: FOOTER_H,
+    minHeight: FOOTER_H,
+    paddingVertical: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: Colors.roxoclaro,
   },
   tagsRow: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   tag: {
     fontSize: 12,
-    color: '#434343',
+    color: Colors.preto,
     fontFamily: 'Roboto-Regular',
     textTransform: 'capitalize', 
   },
   location: {
-    fontSize: 12,
-    color: '#434343',
+    fontSize: 16,
+    color: Colors.preto,
     fontFamily: 'Roboto-Regular',
     textAlign: 'center',
     textTransform: 'capitalize',
     paddingHorizontal: 8,
+    marginTop: 4,
   },
 });
