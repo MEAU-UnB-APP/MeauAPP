@@ -134,7 +134,7 @@ export function IndividualChatScreen() {
       title: chatTitle,
       headerRight: () => (
         isPetOwner && !animalAdopted ? (
-          <View style={{ flexDirection: 'row', marginRight: 8, alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', marginRight: 8, alignItems: 'center', marginTop: 120 }}>
             <TouchableOpacity
               onPress={() => setDialogRejectionVisible(true)}
               style={{
