@@ -1,53 +1,41 @@
-import { View, Text, StyleSheet, Pressable, SafeAreaView, Image, ScrollView } from 'react-native';
-import SEButton from '../../components/SEButton';
+import { View, Text, StyleSheet, SafeAreaView, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native'; 
+import { Colors } from '../../config/colors';
+import SEButton from '../../components/SEButton';
 
 export function Introducao() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.mainContent}>
-          <Text style={styles.title}>Olá!</Text>
-          <Text style={styles.subtitle}>
-            Bem vindo ao Meau!{'\n'}
-            Aqui você pode adotar, doar e ajudar{'\n'}
-            cães e gatos com facilidade.{'\n'}
-            Qual o seu interesse?
-          </Text>
-          
-          <View style={styles.loginContainer}>
-            <Pressable 
-              onPress={() => navigation.navigate('Login')}
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.5 : 1,
-              })}
-            >
-              <Text style={styles.loginText}>Login</Text>
-            </Pressable>
-            <Pressable 
-              onPress={() => navigation.navigate('CadastroPessoal')}
-              style={({ pressed }) => ({
-                opacity: pressed ? 0.5 : 1,
-                padding: 10,
-              })}
-            >
-              <Text style={styles.loginText}>Cadastre-se</Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.footer}>
-            <Image 
-              source={require('../../assets/images/Meau_marca_2.png')} 
-              style={styles.logoImage} 
-            />
-          </View>
+      <View style={styles.mainContent}>
+        <Image 
+          source={require('../../assets/images/Meau_marca.png')} 
+          style={styles.logoImage} 
+        />
+        <Text style={styles.subtitle}>
+          Bem vindo ao Meau!{'\n'}
+          Aqui você pode adotar e doar{'\n'}
+          cães e gatos com facilidade.{'\n'}
+          {'\n'}
+          Qual o seu interesse?
+        </Text>
+        
+        <View style={styles.buttonContainer}>
+          <SEButton 
+            color={Colors.roxo}
+            onPress={() => navigation.navigate('Login')}
+          >
+            Login
+          </SEButton>
+          <SEButton 
+            color={Colors.rosaescuro}
+            onPress={() => navigation.navigate('CadastroPessoal')}
+          >
+            Cadastre-se
+          </SEButton>
         </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -55,39 +43,24 @@ export function Introducao() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'space-between',
-    paddingVertical: 20,
+    backgroundColor: Colors.roxoclaro,
   },
   mainContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40, 
+    paddingHorizontal: 20,
   },
-  loginContainer: {
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  footer: {
-    alignItems: 'center',
+  buttonContainer: {
+    width: '80%',
+    maxWidth: 300,
+    gap: 16,
     marginTop: 20,
-    paddingBottom: 20,
-  },
-  title: {
-    fontFamily: 'Courgette-Regular',
-    fontSize: 72,
-    color: '#ffd358',
-    textAlign: 'center',
-    marginTop: 10,
   },
   subtitle: {
     fontFamily: 'Roboto-Regular',
     fontSize: 16,
-    color: '#757575',
+    color: Colors.branco,
     textAlign: 'center',
     marginTop: 32,
     marginBottom: 32,
@@ -95,19 +68,8 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   logoImage: {
-    width: 120,
+    width: 200,
     height: 80,
     resizeMode: 'contain',
   },
-  loginText: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 16,
-    color: '#88c9bf',
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    width: 232,
-    gap: 16,
-    marginBottom: 20,
-  }
 });

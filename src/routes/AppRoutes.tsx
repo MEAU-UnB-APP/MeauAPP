@@ -8,6 +8,7 @@ import { Introducao } from "../navigation/screens/Introducao";
 import { Login } from "../navigation/screens/Login";
 import { CadastroPessoal } from "../navigation/screens/CadastroPessoal";
 import { CadastroAnimal } from "../navigation/screens/CadastroAnimal";
+import { Colors } from "../config/colors";
 
 const Stack = createNativeStackNavigator();
 
@@ -17,7 +18,7 @@ export default function AppRoutes() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#88c9bf" />
+        <ActivityIndicator size="large" color={Colors.roxo} />
       </View>
     );
   }
@@ -60,7 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.roxo,
   },
 });
 

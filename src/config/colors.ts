@@ -6,6 +6,7 @@ export const Colors = {
     rosaescuro:"#f37aac",
     preto:"#000000",
     branco:"#ffffff",
+    cinza:"#DEDBDB",
 } as const;
 
 export type ColorsType = typeof Colors;

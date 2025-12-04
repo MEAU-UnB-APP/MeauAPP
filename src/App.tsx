@@ -13,7 +13,7 @@ import { AuthProvider } from './context/AuthContext';
 import  AppRoutes  from "./routes/AppRoutes";
 import { auth } from './config/firebase';
 import { registerForPushNotifications, setupNotificationHandlers } from './services/fcmService';
-
+import { Colors } from './config/colors';
 
 Asset.loadAsync([
   ...NavigationAssets,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#88c9bf',
+    backgroundColor: Colors.roxo,
   },
   backgroundImage: {
     position: 'absolute', 
