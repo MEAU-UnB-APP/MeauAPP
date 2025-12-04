@@ -10,7 +10,11 @@ import {
   setDoc, 
   serverTimestamp,
   getDoc,
-  updateDoc
+  updateDoc,
+  deleteDoc,
+  writeBatch,
+  getDocs,
+  where
 } from 'firebase/firestore';
 import { Text, View, Image, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
@@ -261,6 +265,12 @@ export function IndividualChatScreen() {
         console.log('⚠️ Erro ao configurar notificação:', error.message);
       });
 
+      await deleteOtherChatsForPet(
+        chatData._chatContext.animalId,
+        chatData._chatContext.interestedId, // novo dono
+        user.uid                              // dono atual (antigo dono)
+      );
+
       Alert.alert('Sucesso!', 'Adoção confirmada com sucesso!');
       console.log('Adoption confirmed successfully!');
 
@@ -370,6 +380,43 @@ export function IndividualChatScreen() {
     }
 
   }, [chatRoomID, user, animalAdopted]);
+
+  const deleteOtherChatsForPet = async (animalId: string, newOwnerId: string, oldOwnerId: string) => {
+  try {
+    const chatsRef = collection(db, 'chats');
+    const q = query(chatsRef, where('_chatContext.animalId', '==', animalId));
+    const snap = await getDocs(q);
+
+    for (const chatDoc of snap.docs) {
+      const chatId = chatDoc.id;
+      const data = chatDoc.data();
+      const participants = data?.participants || [];
+
+      const isCurrentChat = chatId === chatRoomID;
+      const isOwnerOwnerChat =
+        participants.includes(oldOwnerId) && participants.includes(newOwnerId);
+
+      // Pular o chat atual e o chat entre os donos antigo e novo
+      if (isCurrentChat || isOwnerOwnerChat) continue;
+
+      // 1. Deletar todas as mensagens do chat
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
+      const messagesSnap = await getDocs(messagesRef);
+      const batch = writeBatch(db);
+
+      messagesSnap.forEach((msg) => batch.delete(msg.ref));
+      await batch.commit();
+
+      // 2. Deletar documento do chat
+      await deleteDoc(doc(db, 'chats', chatId));
+
+      console.log(`Deleted chat ${chatId} related to pet ${animalId}`);
+    }
+  } catch (err) {
+    console.error('Error deleting other chats:', err);
+  }
+};
+
 
   const renderSystemMessage = (props: any) => (
     <View style={{
