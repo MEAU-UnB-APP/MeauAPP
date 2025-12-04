@@ -8,6 +8,7 @@ interface SECheckboxGroupProps {
   onSelectionChange: (values: string[]) => void;
   style?: ViewStyle;
   disabled?: boolean;
+  layout?: 'horizontal' | 'vertical';
 }
 
 const SECheckboxGroup: React.FC<SECheckboxGroupProps> = ({
@@ -15,7 +16,8 @@ const SECheckboxGroup: React.FC<SECheckboxGroupProps> = ({
   selectedValues,
   onSelectionChange,
   style,
-  disabled = false, 
+  disabled = false,
+  layout = 'horizontal',
 }) => {
 
   const handlePress = (option: string) => {
@@ -36,8 +38,14 @@ const SECheckboxGroup: React.FC<SECheckboxGroupProps> = ({
     onSelectionChange(newSelectedValues);
   };
 
+  const isVertical = layout === 'vertical';
+
   return (
-    <View style={[styles.container, style]}>
+    <View style={[
+      styles.container, 
+      isVertical && styles.verticalContainer,
+      style
+    ]}>
       {options.map((option) => {
 
         const isSelected = selectedValues.includes(option);
@@ -45,7 +53,10 @@ const SECheckboxGroup: React.FC<SECheckboxGroupProps> = ({
         return (
           <TouchableOpacity
             key={option}
-            style={styles.optionContainer}
+            style={[
+              styles.optionContainer,
+              isVertical && styles.verticalOptionContainer
+            ]}
             onPress={() => handlePress(option)}
             activeOpacity={0.7}
             disabled={disabled}
@@ -77,11 +88,18 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
+  verticalContainer: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+  },
   optionContainer: {
     width: '32%',
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  verticalOptionContainer: {
+    width: '100%',
   },
   optionText: {
     fontFamily: 'Roboto-Regular',

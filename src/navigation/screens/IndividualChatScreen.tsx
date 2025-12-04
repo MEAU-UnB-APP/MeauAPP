@@ -12,12 +12,12 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { Text, View, Image, StyleSheet, Alert, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text, View, Image, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { Button, Dialog, Portal, Provider } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { 
-  sendNewMessageNotification, 
   sendAdoptionApprovedNotification, 
   sendAdoptionRejectedNotification 
 } from '../../services/notificationService';
@@ -60,6 +60,7 @@ export function IndividualChatScreen() {
   } | null>(null);
   const navigation = useNavigation();
   const route = useRoute<IndividualChatRouteProp>();
+  const insets = useSafeAreaInsets();
 
   const { chatRoomID, chatTitle } = route.params;
   const user = auth.currentUser;
@@ -129,26 +130,30 @@ export function IndividualChatScreen() {
       title: chatTitle,
       headerRight: () => (
         isPetOwner && !animalAdopted ? (
-          <View style={{ flexDirection: 'row', marginRight: 10 }}>
-            <Button 
-              mode="contained" 
+          <View style={{ flexDirection: 'row', marginRight: 8, alignItems: 'center' }}>
+            <TouchableOpacity
               onPress={() => setDialogRejectionVisible(true)}
-              style={{ marginRight: 10 }}
-              buttonColor="#ff4444"
-              textColor="white"
-              compact={true}
+              style={{
+                backgroundColor: '#ff4444',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 4,
+                marginRight: 6,
+              }}
             >
-              Recusar
-            </Button>
-            <Button 
-              mode="contained" 
+              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Recusar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => setDialogVisible(true)}
-              buttonColor="#4CAF50"
-              textColor="white"
-              compact={true}
+              style={{
+                backgroundColor: '#4CAF50',
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 4,
+              }}
             >
-              Aprovar
-            </Button>
+              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Aprovar</Text>
+            </TouchableOpacity>
           </View>
         ) : null
       )
@@ -164,27 +169,9 @@ export function IndividualChatScreen() {
         if (change.type === 'added' && !change.doc.metadata.hasPendingWrites) {
           const data = change.doc.data() as FirestoreMessage;
           
-          // Não fazer nada se:
-          // 1. A mensagem for do sistema
-          // 2. O animal já foi adotado
+          // Ignorar mensagens do sistema ou quando animal já foi adotado
           if (data.user._id === 'system' || animalAdopted) {
             return;
-          }
-          
-          // Se a mensagem for do usuário atual, enviar notificação para o outro participante
-          if (data.user._id === user?.uid && otherParticipant) {
-            console.log('💬 Mensagem enviada pelo usuário atual, configurando notificação...');
-            
-            // Chamar função para configurar notificação de nova mensagem
-            sendNewMessageNotification({
-              chatRoomID,
-              messageText: data.text,
-              senderName: user?.displayName || 'Você'
-            }).then(result => {
-              console.log('✅ Notificação de nova mensagem configurada:', result.message);
-            }).catch(error => {
-              console.log('⚠️ Erro ao configurar notificação:', error.message);
-            });
           }
         }
       });
@@ -208,10 +195,10 @@ export function IndividualChatScreen() {
     });
 
     return () => unsubscribe();
-  }, [chatRoomID, user, animalAdopted, otherParticipant]);
+  }, [chatRoomID, user, animalAdopted]);
 
   const handleConfirmAdoption = async () => {
-    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {
+    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo || !user) {
       console.log('No animal ID or other participant found');
       Alert.alert('Erro', 'Dados incompletos para confirmar adoção.');
       return;
@@ -248,21 +235,33 @@ export function IndividualChatScreen() {
         adoptionConfirmed: true,
       }, { merge: true });
 
+      // Criar documento na coleção 'adocoes' para acionar Cloud Function de notificação
+      const adocoesRef = collection(db, 'adocoes');
+      await addDoc(adocoesRef, {
+        status: 'confirmada',
+        interessadoId: chatData._chatContext.interestedId,
+        donoId: user.uid,
+        donoName: user.displayName || 'O dono',
+        animalName: animalInfo.nome,
+        animalId: chatData._chatContext.animalId,
+        chatId: chatRoomID,
+        createdAt: serverTimestamp(),
+      });
+
       setAnimalAdopted(true);
       setDialogVisible(false);
       
-      // Chamar função para configurar notificação de adoção aprovada
+      // Manter a chamada da função antiga para compatibilidade
       sendAdoptionApprovedNotification({
         chatRoomID,
         animalName: animalInfo.nome
       }).then(result => {
         console.log('✅ Notificação de adoção aprovada configurada:', result.message);
-        Alert.alert('Sucesso!', 'Adoção confirmada com sucesso!');
       }).catch(error => {
         console.log('⚠️ Erro ao configurar notificação:', error.message);
-        Alert.alert('Adoção Confirmada', 'Adoção confirmada, mas a notificação não pôde ser enviada.');
       });
 
+      Alert.alert('Sucesso!', 'Adoção confirmada com sucesso!');
       console.log('Adoption confirmed successfully!');
 
     } catch (error) {
@@ -273,7 +272,7 @@ export function IndividualChatScreen() {
   };
 
   const handleRejectAdoption = async () => {
-    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo) {
+    if (!chatData?._chatContext?.animalId || !otherParticipant || !animalInfo || !user) {
       console.log('No animal ID or other participant found');
       Alert.alert('Erro', 'Dados incompletos para recusar adoção.');
       return;
@@ -299,20 +298,32 @@ export function IndividualChatScreen() {
         adoptionRejected: true,
       }, { merge: true });
 
+      // Criar documento na coleção 'adocoes' para acionar Cloud Function de notificação
+      const adocoesRef = collection(db, 'adocoes');
+      await addDoc(adocoesRef, {
+        status: 'recusada',
+        interessadoId: chatData._chatContext.interestedId,
+        donoId: user.uid,
+        donoName: user.displayName || 'O dono',
+        animalName: animalInfo.nome,
+        animalId: chatData._chatContext.animalId,
+        chatId: chatRoomID,
+        createdAt: serverTimestamp(),
+      });
+
       setDialogRejectionVisible(false);
       
-      // Chamar função para configurar notificação de adoção recusada
+      // Manter a chamada da função antiga para compatibilidade
       sendAdoptionRejectedNotification({
         chatRoomID,
         animalName: animalInfo.nome
       }).then(result => {
         console.log('✅ Notificação de adoção recusada configurada:', result.message);
-        Alert.alert('Adoção Recusada', 'A adoção foi recusada com sucesso.');
       }).catch(error => {
         console.log('⚠️ Erro ao configurar notificação:', error.message);
-        Alert.alert('Adoção Recusada', 'Adoção recusada, mas a notificação não pôde ser enviada.');
       });
 
+      Alert.alert('Adoção Recusada', 'A adoção foi recusada com sucesso.');
       console.log('Adoption rejected successfully!');
 
     } catch (error) {
@@ -432,11 +443,9 @@ export function IndividualChatScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingTop: insets.top }}>
       <Provider>
-        <KeyboardAvoidingView 
-          style={{ flex: 1 }}
-        >
+        <View style={{ flex: 1 }}>
           <Portal>
             {/* Diálogo de Confirmação de Adoção */}
             <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
@@ -523,10 +532,11 @@ export function IndividualChatScreen() {
             textInputProps={{
               editable: !animalAdopted,
             }}
+            bottomOffset={insets.bottom}
             />
-        </KeyboardAvoidingView>
+        </View>
       </Provider>
-    </SafeAreaView>
+    </View>
   );
 }
 

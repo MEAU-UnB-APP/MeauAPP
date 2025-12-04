@@ -10,6 +10,7 @@ import {
 import { Text, Button } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native'; 
 import * as Location from 'expo-location';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import SEButton from "../../components/SEButton";
 import SETitle from '../../components/SETitle';
 import SETextInput from '../../components/SETextInput';
@@ -22,6 +23,7 @@ import { collection, addDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { reverseGeocode, geocodeAddress } from "../../services/geocodingService";
 import { LocationData } from "../../types/index";
+import { Colors } from "../../config/colors";
 
 const OPTIONS = ['ADOÇÃO'] as const;
 type OptionType = typeof OPTIONS[number];
@@ -340,8 +342,8 @@ export function CadastroAnimal() {
             privacidade do menu configurações do
             aplicativo.
           </Text>
-          <SEButton backgroundColor="#ffd358" onPress={resetForm}>
-            CADASTRAR NOVO ANIMAL
+          <SEButton color={Colors.roxo} onPress={resetForm}>
+            + CADASTRAR NOVO ANIMAL
           </SEButton>
         </View>
       </SafeAreaView>
@@ -362,7 +364,9 @@ export function CadastroAnimal() {
         </Text>
         
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">NOME DO ANIMAL</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">NOME DO ANIMAL</SETitle>
+          </View>
           <SETextInput
             placeholder="Nome do Animal"
             value={nome}
@@ -371,7 +375,9 @@ export function CadastroAnimal() {
         </View>
         
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">FOTOS DO ANIMAL (Máx. 5)</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">FOTOS DO ANIMAL (Máx. 5)</SETitle>
+          </View>
           <SEImagePicker
             imageUris={fotosAnimal}
             onImagesChange={setFotosAnimal}
@@ -380,7 +386,9 @@ export function CadastroAnimal() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">ESPÉCIE</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">ESPÉCIE</SETitle>
+          </View>
           <SERadioButtonGroup
             options={ESPECIE_OPTIONS}
             selectedValue={selectedEspecie}
@@ -389,7 +397,9 @@ export function CadastroAnimal() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">SEXO</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">SEXO</SETitle>
+          </View>
           <SERadioButtonGroup
             options={SEXO_OPTIONS}
             selectedValue={selectedSexo}
@@ -398,7 +408,9 @@ export function CadastroAnimal() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">PORTE</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">PORTE</SETitle>
+          </View>
           <SERadioButtonGroup
             options={PORTE_OPTIONS}
             selectedValue={selectedPorte}
@@ -407,7 +419,9 @@ export function CadastroAnimal() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">IDADE</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">IDADE</SETitle>
+          </View>
           <SERadioButtonGroup
             options={AGE_OPTIONS}
             selectedValue={selectedAge}
@@ -416,20 +430,26 @@ export function CadastroAnimal() {
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">TEMPERAMENTO</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">TEMPERAMENTO</SETitle>
+          </View>
           <SECheckboxGroup
             options={PERSONALITY_OPTIONS}
             selectedValues={selectedPersonalities}
             onSelectionChange={setSelectedPersonalities}
+            layout="vertical"
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">SAÚDE</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">SAÚDE</SETitle>
+          </View>
           <SECheckboxGroup
             options={HEALTH_OPTIONS}
             selectedValues={selectedHealth}
             onSelectionChange={setSelectedHealth}
+            layout="vertical"
           />
         </View>
         
@@ -445,16 +465,21 @@ export function CadastroAnimal() {
         )}
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">EXIGÊNCIAS PARA ADOÇÃO</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">EXIGÊNCIAS PARA ADOÇÃO</SETitle>
+          </View>
           <SECheckboxGroup
             options={EXIGENCIAS_OPTIONS}
             selectedValues={selectedExigencias}
             onSelectionChange={setSelectedExigencias}
+            layout="vertical"
           />
         </View>
 
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">LOCALIZAÇÃO</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">LOCALIZAÇÃO</SETitle>
+          </View>
           <View style={styles.locationContainer}>
             <SETextInput
               placeholder="Informe a cidade ou região"
@@ -467,20 +492,26 @@ export function CadastroAnimal() {
               onPress={requestLocation}
               disabled={locationLoading}
               style={styles.locationButton}
-              textColor="#88C9BF"
+              textColor={Colors.roxo}
+              icon={() => <Icon name="location-on" size={20} color={Colors.roxo} />}
             >
-              {locationLoading ? 'Buscando localização...' : '📍 Usar minha localização'}
+              {locationLoading ? 'Buscando localização...' : 'Usar minha localização'}
             </Button>
             {locationData?.enderecoCompleto && (
-              <Text style={styles.locationInfo}>
-                📍 {locationData.enderecoCompleto}
-              </Text>
+              <View style={styles.locationInfoContainer}>
+                <Icon name="place" size={16} color={Colors.roxo} />
+                <Text style={styles.locationInfo}>
+                  {locationData.enderecoCompleto}
+                </Text>
+              </View>
             )}
           </View>
         </View>
         
         <View style={styles.fieldGroup}>
-          <SETitle type="second" color="azul">SOBRE O ANIMAL</SETitle>
+          <View style={styles.fieldGroupLabel}>
+            <SETitle type="second" color="roxo">SOBRE O ANIMAL</SETitle>
+          </View>
           <SETextInput
             placeholder="Compartilhe a história do animal"
             value={sobre}
@@ -490,7 +521,7 @@ export function CadastroAnimal() {
         </View>
         
         <SEButton 
-          backgroundColor='#88C9BF' 
+          color={Colors.roxo}
           onPress={handleFinalizar}
           disabled={loading}
         >
@@ -506,7 +537,7 @@ export function CadastroAnimal() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.cinza,
   },
   container: {
     flex: 1,
@@ -530,25 +561,28 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   fieldGroup: {
-    marginBottom: 20, 
+    marginBottom: 20,
+  },
+  fieldGroupLabel: {
+    marginBottom: 12,
   },
   successContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 30,
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.cinza,
   },
   successTitle: {
     fontFamily: 'Courgette-Regular',
     fontSize: 72,
-    color: '#ffd358',
+    color: Colors.roxo,
     marginBottom: 20,
   },
   successBody: {
     fontFamily: 'Roboto-Regular',
     fontSize: 14,
-    color: '#757575',
+    color: Colors.roxoclaro,
     textAlign: 'center',
     lineHeight: 21, 
     marginBottom: 15,
@@ -558,14 +592,20 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     marginTop: 8,
-    borderColor: '#88C9BF',
+    borderColor: Colors.roxo,
+  },
+  locationInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   locationInfo: {
     fontSize: 12,
-    color: '#757575',
+    color: Colors.roxoclaro,
     fontFamily: 'Roboto-Regular',
-    marginTop: 8,
+    marginLeft: 4,
     fontStyle: 'italic',
-    paddingHorizontal: 4,
+    flex: 1,
   },
 });

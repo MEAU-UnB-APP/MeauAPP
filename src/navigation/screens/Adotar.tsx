@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { 
   View, 
@@ -6,23 +6,38 @@ import {
   FlatList, 
   ActivityIndicator, 
   Text, 
-  Modal,
   ScrollView,
-  Image,
   TouchableOpacity,
-  StatusBar 
 } from 'react-native';
 import { PetCard } from '../../components/PetCard';
-import { LocationMap } from '../../components/LocationMap';
+import { PetDetailsModal } from '../../components/PetDetailsModal';
 import { Animal } from '../../types/index'; 
 import { db } from '../../config/firebase'; 
-import { collection, query, where, getDocs } from 'firebase/firestore'; 
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Colors } from '../../config/colors';
+import SETitle from '../../components/SETitle'; 
+
+type FilterValue<T> = T | null;
+
+interface Filters {
+  especie: FilterValue<'Cachorro' | 'Gato'>;
+  sexo: FilterValue<'Macho' | 'Fêmea'>;
+  idade: FilterValue<'Filhote' | 'Adulto' | 'Idoso'>;
+  porte: FilterValue<'Pequeno' | 'Médio' | 'Grande'>;
+}
 
 export function Adotar() {
   const [animais, setAnimais] = useState<Animal[]>([]);
+  const [allAnimais, setAllAnimais] = useState<Animal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    especie: null,
+    sexo: null,
+    idade: null,
+    porte: null,
+  });
 
 useFocusEffect(
   useCallback(() => { 
@@ -38,6 +53,7 @@ useFocusEffect(
         })) as Animal[];
 
         if (isActive) {
+          setAllAnimais(animaisList);
           setAnimais(animaisList);
         }
       } catch (error) {
@@ -56,6 +72,26 @@ useFocusEffect(
   }, []) 
 );
 
+  // Filtrar animais baseado nos filtros selecionados
+  React.useEffect(() => {
+    let filtered = [...allAnimais];
+
+    if (filters.especie) {
+      filtered = filtered.filter(animal => animal.especie === filters.especie);
+    }
+    if (filters.sexo) {
+      filtered = filtered.filter(animal => animal.sexo === filters.sexo);
+    }
+    if (filters.idade) {
+      filtered = filtered.filter(animal => animal.idade === filters.idade);
+    }
+    if (filters.porte) {
+      filtered = filtered.filter(animal => animal.porte === filters.porte);
+    }
+
+    setAnimais(filtered);
+  }, [filters, allAnimais]);
+
   const handlePetPress = (animal: Animal) => {
     setSelectedAnimal(animal);
     setModalVisible(true);
@@ -66,42 +102,61 @@ useFocusEffect(
     setSelectedAnimal(null);
   };
 
-  // Função para renderizar tags
-  const renderTags = (items: string[], style: any = {}) => {
-    if (!items || items.length === 0) return null;
-    
-    return (
-      <View style={[styles.tagsContainer, style]}>
-        {items.map((item, index) => (
-          <View key={index} style={styles.tagItem}>
-            <Text style={styles.tagText}>{item}</Text>
-          </View>
-        ))}
-      </View>
-    );
+  const handleFilterChange = <K extends keyof Filters>(
+    key: K,
+    value: Filters[K]
+  ) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key] === value ? null : value,
+    }));
   };
 
-  // Função para formatar data
-  const formatDate = (date: any) => {
-    if (!date) return 'Não informada';
-    try {
-      const dateObj = date.toDate ? date.toDate() : new Date(date);
-      return dateObj.toLocaleDateString('pt-BR');
-    } catch {
-      return 'Data inválida';
-    }
+  const clearFilters = () => {
+    setFilters({
+      especie: null,
+      sexo: null,
+      idade: null,
+      porte: null,
+    });
   };
+
+  const hasActiveFilters = Object.values(filters).some(v => v !== null);
+
+  const FilterButton: React.FC<{
+    label: string;
+    isSelected: boolean;
+    onPress: () => void;
+  }> = ({ label, isSelected, onPress }) => (
+    <TouchableOpacity
+      style={[
+        styles.filterButton,
+        isSelected && styles.filterButtonSelected,
+      ]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Text
+        style={[
+          styles.filterButtonText,
+          isSelected && styles.filterButtonTextSelected,
+        ]}
+      >
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
 
   if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#ffd358" />
+        <ActivityIndicator size="large" color={Colors.roxo} />
         <Text style={styles.infoText}>Buscando amiguinhos...</Text>
       </View>
     );
   }
 
-  if (animais.length === 0) {
+  if (allAnimais.length === 0 && !loading) {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.infoText}>Nenhum animal disponível para adoção no momento.</Text>
@@ -111,6 +166,131 @@ useFocusEffect(
 
   return (
     <View style={styles.container}>
+      {/* Seção de Filtros */}
+      <View style={styles.filtersContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersScrollContent}
+        >
+          {/* Filtro de Espécie */}
+          <View style={styles.filterSection}>
+            <SETitle type="second" color="roxo" style={styles.filterLabel}>
+              Espécie
+            </SETitle>
+            <View style={styles.filterButtonsRow}>
+              <FilterButton
+                label="Todos"
+                isSelected={filters.especie === null}
+                onPress={() => handleFilterChange('especie', null)}
+              />
+              <FilterButton
+                label="Cachorro"
+                isSelected={filters.especie === 'Cachorro'}
+                onPress={() => handleFilterChange('especie', 'Cachorro')}
+              />
+              <FilterButton
+                label="Gato"
+                isSelected={filters.especie === 'Gato'}
+                onPress={() => handleFilterChange('especie', 'Gato')}
+              />
+            </View>
+          </View>
+
+          {/* Filtro de Sexo */}
+          <View style={styles.filterSection}>
+            <SETitle type="second" color="roxo" style={styles.filterLabel}>
+              Sexo
+            </SETitle>
+            <View style={styles.filterButtonsRow}>
+              <FilterButton
+                label="Todos"
+                isSelected={filters.sexo === null}
+                onPress={() => handleFilterChange('sexo', null)}
+              />
+              <FilterButton
+                label="Macho"
+                isSelected={filters.sexo === 'Macho'}
+                onPress={() => handleFilterChange('sexo', 'Macho')}
+              />
+              <FilterButton
+                label="Fêmea"
+                isSelected={filters.sexo === 'Fêmea'}
+                onPress={() => handleFilterChange('sexo', 'Fêmea')}
+              />
+            </View>
+          </View>
+
+          {/* Filtro de Idade */}
+          <View style={styles.filterSection}>
+            <SETitle type="second" color="roxo" style={styles.filterLabel}>
+              Idade
+            </SETitle>
+            <View style={styles.filterButtonsRow}>
+              <FilterButton
+                label="Todos"
+                isSelected={filters.idade === null}
+                onPress={() => handleFilterChange('idade', null)}
+              />
+              <FilterButton
+                label="Filhote"
+                isSelected={filters.idade === 'Filhote'}
+                onPress={() => handleFilterChange('idade', 'Filhote')}
+              />
+              <FilterButton
+                label="Adulto"
+                isSelected={filters.idade === 'Adulto'}
+                onPress={() => handleFilterChange('idade', 'Adulto')}
+              />
+              <FilterButton
+                label="Idoso"
+                isSelected={filters.idade === 'Idoso'}
+                onPress={() => handleFilterChange('idade', 'Idoso')}
+              />
+            </View>
+          </View>
+
+          {/* Filtro de Porte */}
+          <View style={styles.filterSection}>
+            <SETitle type="second" color="roxo" style={styles.filterLabel}>
+              Porte
+            </SETitle>
+            <View style={styles.filterButtonsRow}>
+              <FilterButton
+                label="Todos"
+                isSelected={filters.porte === null}
+                onPress={() => handleFilterChange('porte', null)}
+              />
+              <FilterButton
+                label="Pequeno"
+                isSelected={filters.porte === 'Pequeno'}
+                onPress={() => handleFilterChange('porte', 'Pequeno')}
+              />
+              <FilterButton
+                label="Médio"
+                isSelected={filters.porte === 'Médio'}
+                onPress={() => handleFilterChange('porte', 'Médio')}
+              />
+              <FilterButton
+                label="Grande"
+                isSelected={filters.porte === 'Grande'}
+                onPress={() => handleFilterChange('porte', 'Grande')}
+              />
+            </View>
+          </View>
+        </ScrollView>
+
+        {hasActiveFilters && (
+          <TouchableOpacity
+            style={styles.clearFiltersButton}
+            onPress={clearFilters}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.clearFiltersText}>Limpar Filtros</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       <FlatList
         data={animais}
         keyExtractor={(item) => item.id}
@@ -121,142 +301,20 @@ useFocusEffect(
             onPress={() => handlePetPress(item)}
           />
         )}
+        ListEmptyComponent={
+          <View style={styles.centerContainer}>
+            <Text style={styles.infoText}>
+              Nenhum animal encontrado com os filtros selecionados.
+            </Text>
+          </View>
+        }
       />
 
-      {/* Modal de Detalhes - TODAS AS INFORMAÇÕES */}
-      <Modal
-        animationType="slide"
-        transparent={false}
+      <PetDetailsModal
         visible={modalVisible}
-        onRequestClose={closeModal}
-        statusBarTranslucent={true}
-      >
-        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-        
-        {selectedAnimal && (
-          <View style={styles.fullScreenModal}>
-            {/* Header Fixo */}
-            <View style={styles.modalHeader}>
-              <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>{selectedAnimal.nome}</Text>
-              <View style={styles.headerSpacer} />
-            </View>
-            
-            {/* Conteúdo com Scroll */}
-            <ScrollView 
-              style={styles.modalScroll}
-              showsVerticalScrollIndicator={false}
-            >
-              {/* Foto Principal */}
-              <Image 
-                source={{ uri: selectedAnimal.fotoPrincipal || 'https://placehold.co/400x300/e0e0e0/757575?text=Sem+Foto' }} 
-                style={styles.modalImage} 
-              />
-              
-              <View style={styles.modalInfo}>
-                {/* Informações Básicas */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Informações Básicas</Text>
-                  
-                  <View style={styles.tagsRow}>
-                    <View style={styles.mainTag}>
-                      <Text style={styles.mainTagText}>{selectedAnimal.sexo || 'Não informado'}</Text>
-                    </View>
-                    <View style={styles.mainTag}>
-                      <Text style={styles.mainTagText}>{selectedAnimal.idade || 'Não informado'}</Text>
-                    </View>
-                    <View style={styles.mainTag}>
-                      <Text style={styles.mainTagText}>{selectedAnimal.porte || 'Não informado'}</Text>
-                    </View>
-                  </View>
-                  
-                  <View style={styles.infoGrid}>
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Espécie</Text>
-                      <Text style={styles.infoValue}>{selectedAnimal.especie || 'Não informada'}</Text>
-                    </View>
-                    
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Localização</Text>
-                      <Text style={styles.infoValue}>{selectedAnimal.localizacao || 'Não informada'}</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Temperamento */}
-                {(selectedAnimal.temperamento && selectedAnimal.temperamento.length > 0) && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Temperamento</Text>
-                    {renderTags(selectedAnimal.temperamento)}
-                  </View>
-                )}
-
-                {/* Saúde */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Saúde</Text>
-                  
-                  {(selectedAnimal.saude && selectedAnimal.saude.length > 0) && (
-                    <>
-                      {renderTags(selectedAnimal.saude, { marginBottom: 12 })}
-                    </>
-                  )}
-                  
-                  {selectedAnimal.doencas ? (
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Doenças/Condições</Text>
-                      <Text style={styles.infoValue}>{selectedAnimal.doencas}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.noInfoText}>Nenhuma doença ou condição especial informada</Text>
-                  )}
-                </View>
-
-                {/* Exigências para Adoção */}
-                {(selectedAnimal.exigencias && selectedAnimal.exigencias.length > 0) && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Exigências para Adoção</Text>
-                    {renderTags(selectedAnimal.exigencias)}
-                  </View>
-                )}
-
-                {/* Sobre o Animal */}
-                {selectedAnimal.sobre && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Sobre o Animal</Text>
-                    <Text style={styles.description}>{selectedAnimal.sobre}</Text>
-                  </View>
-                )}
-
-                {/* Localização */}
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Localização</Text>
-                  <LocationMap locationData={selectedAnimal.locationData} petName={selectedAnimal.nome} />
-                </View>
-
-                {/* Galeria de Fotos (se tiver mais fotos) */}
-                {selectedAnimal.fotos && selectedAnimal.fotos.length > 1 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Mais Fotos ({selectedAnimal.fotos.length})</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      <View style={styles.galleryContainer}>
-                        {selectedAnimal.fotos.map((foto, index) => (
-                          <Image 
-                            key={index}
-                            source={{ uri: foto }} 
-                            style={styles.galleryImage} 
-                          />
-                        ))}
-                      </View>
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          </View>
-        )}
-      </Modal>
+        animal={selectedAnimal}
+        onClose={closeModal}
+      />
     </View>
   );
 }
@@ -264,178 +322,86 @@ useFocusEffect(
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#fff' 
+    backgroundColor: Colors.branco, 
+  },
+  filtersContainer: {
+    backgroundColor: Colors.branco,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.cinza,
+  },
+  filtersScrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  filterSection: {
+    marginRight: 24,
+    minWidth: 120,
+  },
+  filterLabel: {
+    marginBottom: 8,
+    fontSize: 14,
+  },
+  filterButtonsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 4,
+  },
+  filterButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: Colors.cinza,
+    marginRight: 6,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: Colors.cinza,
+  },
+  filterButtonSelected: {
+    backgroundColor: Colors.roxo,
+    borderColor: Colors.roxo,
+  },
+  filterButtonText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Regular',
+    color: Colors.preto,
+  },
+  filterButtonTextSelected: {
+    color: Colors.branco,
+    fontFamily: 'Roboto-Medium',
+  },
+  clearFiltersButton: {
+    alignSelf: 'flex-end',
+    marginRight: 16,
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.rosaescuro,
+  },
+  clearFiltersText: {
+    fontSize: 12,
+    fontFamily: 'Roboto-Medium',
+    color: Colors.branco,
   },
   list: { 
     paddingHorizontal: 8, 
     paddingTop: 8, 
-    paddingBottom: 16 
+    paddingBottom: 16, 
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.branco,
     padding: 20,
+    minHeight: 200,
   },
   infoText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#757575',
+    color: Colors.preto,
     fontFamily: 'Roboto-Regular',
-  },
-  
-  // Modal Styles - TELA INTEIRA
-  fullScreenModal: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ffffffff',
-    backgroundColor: '#ffe29b',
-    marginTop: StatusBar.currentHeight,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-    backgroundColor: '#ffe29b',
-  },
-  closeButtonText: {
-    fontSize: 24,
-    color: '#434343',
-    fontFamily: 'Roboto-Regular',
-    lineHeight: 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: 'Roboto-Medium',
-    color: '#434343',
     textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  modalScroll: {
-    flex: 1,
-  },
-  modalImage: {
-    width: '100%',
-    height: 300,
-    backgroundColor: '#f0f0f0',
-  },
-  modalInfo: {
-    padding: 16,
-  },
-  
-  // Seções
-  section: {
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: 'Roboto-Regular',
-    color: '#f7a800',
-    marginBottom: 16,
-  },
-  
-  // Tags principais
-  tagsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
-  mainTag: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  mainTagText: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Regular',
-    color: '#f7a800',
-    textTransform: 'capitalize',
-  },
-  
-  // Grid de informações
-  infoGrid: {
-    gap: 12,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  infoLabel: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Medium',
-    color: '#434343',
-    flex: 1,
-  },
-  infoValue: {
-    fontSize: 14,
-    fontFamily: 'Roboto-Regular',
-    color: '#666',
-    textTransform: 'capitalize',
-    flex: 1,
-    textAlign: 'right',
-  },
-  
-  // Tags de lista
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tagItem: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  tagText: {
-    fontSize: 12,
-    fontFamily: 'Roboto-Regular',
-    color: '#434343',
-  },
-  
-  // Descrição
-  description: {
-    fontSize: 14,
-    color: '#666',
-    fontFamily: 'Roboto-Regular',
-    lineHeight: 20,
-  },
-  
-  // Texto sem informação
-  noInfoText: {
-    fontSize: 14,
-    color: '#757575',
-    fontFamily: 'Roboto-Regular',
-  },
-  
-  // Galeria de fotos
-  galleryContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  galleryImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
-    backgroundColor: '#f0f0f0',
   },
 });

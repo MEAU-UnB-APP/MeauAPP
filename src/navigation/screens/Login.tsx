@@ -4,6 +4,9 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigation } from '@react-navigation/native';
 import { auth } from '../../config/firebase';
 import { registerForPushNotifications } from '../../services/fcmService';
+import { Colors } from '../../config/colors';
+import SEButton from '../../components/SEButton';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export function Login() {
   const [username, setUsername] = useState('');
@@ -11,6 +14,7 @@ export function Login() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -18,43 +22,65 @@ export function Login() {
       return;
     }
 
+    setErrorMessage(null);
     setLoading(true);
 
     try {
       await signInWithEmailAndPassword(auth, username, password);
       
-      // Registrar token FCM após login bem-sucedido
-      // Adicionar delay para garantir que o documento do usuário existe no Firestore
-      setTimeout(async () => {
-        try {
-          await registerForPushNotifications();
-        } catch (notificationError: any) {
-          console.error('❌ Erro ao registrar notificações no login:', notificationError);
-          // Não interrompe o fluxo se falhar
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      try {
+        console.log('🔔 Registrando notificações após login...');
+        const token = await registerForPushNotifications();
+        if (token) {
+          console.log('✅ Token FCM registrado com sucesso após login');
+        } else {
+          console.warn('⚠️ Token FCM não foi obtido após login');
         }
-      }, 1500); // 1.5 segundos de delay
+      } catch (notificationError: any) {
+        console.error('❌ Erro ao registrar notificações no login:', notificationError);
+      }
       
       navigation.reset({
         index: 0,
         routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
       });
     } catch (error: any) {
-      Alert.alert('Erro ao fazer login', error?.message ?? 'Tente novamente.');
+      setErrorMessage('Falha: senha ou e-mail incorreto!');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleUsernameChange = (text: string) => {
+    setUsername(text);
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <Image 
+        source={require('../../assets/images/Meau_malha.png')} 
+        style={styles.backgroundImage} 
+      />
       <View style={styles.content}>
-        
         <View style={styles.formContainer}>
           <TextInput
             style={styles.input}
             placeholder="E-mail"
+            placeholderTextColor={Colors.preto}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={handleUsernameChange}
             autoCapitalize="none"
           />
           
@@ -62,52 +88,47 @@ export function Login() {
             <TextInput
               style={styles.passwordInput}
               placeholder="Senha"
+              placeholderTextColor={Colors.preto}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               secureTextEntry={!isPasswordVisible}
             />
             <TouchableOpacity 
               style={styles.eyeIcon}
               onPress={() => setIsPasswordVisible(!isPasswordVisible)}
             >
-              <Text>{isPasswordVisible ? '👁️' : '🔒'}</Text>
+              <Icon 
+                name={isPasswordVisible ? 'visibility' : 'visibility-off'} 
+                size={24} 
+                color={Colors.preto} 
+              />
             </TouchableOpacity>
           </View>
           
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>{loading ? 'Entrando...' : 'Entrar'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => navigation.navigate('CadastroPessoal')}
-          >
-            <Text style={styles.secondaryButtonText}>Cadastro</Text>
-          </TouchableOpacity>
+          {errorMessage && (
+            <Text style={styles.errorLabel}>{errorMessage}</Text>
+          )}
+          
+          <View style={styles.buttonWrapper}>
+            <SEButton
+              color={Colors.roxo}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+            </SEButton>
+            
+            <View style={styles.buttonSpacing} />
+            
+            <SEButton
+              color={Colors.roxo}
+              variant="outlined"
+              onPress={() => navigation.navigate('CadastroPessoal')}
+            >
+              Cadastro
+            </SEButton>
+          </View>
         </View>
-
-        <TouchableOpacity style={styles.facebookButton} onPress={() => console.log('Facebook login')}>
-          <View style={styles.socialButtonContent}>
-            <Image 
-              source={require('../../assets/images/facebook-icon.png')}
-              style={styles.socialIcon}
-            />
-            <Text style={styles.facebookButtonText}>Entrar com Facebook</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.googleButton} onPress={() => console.log('Google login')}>
-          <View style={styles.socialButtonContent}>
-            <Image 
-              source={require('../../assets/images/google-icon.png')}
-              style={styles.socialIcon}
-            />
-            <Text style={styles.googleButtonText}>Entrar com Google</Text>
-          </View>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -116,51 +137,44 @@ export function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.cinza,
     padding: 16,
+    overflow: 'hidden',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  footer: {
-    alignItems: 'center',
-    paddingBottom: 32, 
-  },
-  title: {
-    fontFamily: 'Courgette-Regular',
-    fontSize: 32,
-    color: '#ffd358',
-    marginBottom: 24,
+    width: '100%',
   },
   formContainer: {
     width: '100%',
     maxWidth: 300,
-    marginBottom: 20,
-  },
-  label: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 14,
-    color: '#757575',
-    marginBottom: 8,
+    alignSelf: 'center',
   },
   input: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.branco,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Colors.preto,
     borderRadius: 4,
     padding: 12,
     marginBottom: 16,
     fontFamily: 'Roboto-Regular',
     fontSize: 14,
+    color: Colors.preto,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.branco,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Colors.preto,
     borderRadius: 4,
     marginBottom: 16,
   },
@@ -169,101 +183,27 @@ const styles = StyleSheet.create({
     padding: 12,
     fontFamily: 'Roboto-Regular',
     fontSize: 14,
+    color: Colors.preto,
   },
   eyeIcon: {
     padding: 12,
   },
-  button: {
-    backgroundColor: '#88c9bf',
-    borderRadius: 4,
-    padding: 12,
-    alignItems: 'center',
+  buttonWrapper: {
     marginTop: 8,
   },
-  buttonDisabled: {
-    opacity: 0.7,
+  buttonSpacing: {
+    height: 16,
   },
-  buttonText: {
+  errorLabel: {
     fontFamily: 'Roboto-Regular',
     fontSize: 16,
-    color: '#434343',
-  },
-  secondaryButton: {
-    backgroundColor: 'transparent',
+    color: Colors.preto,
+    backgroundColor: Colors.rosa,
+    textAlign: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 4,
-    padding: 12,
-    alignItems: 'center',
     marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#88c9bf',
-  },
-  secondaryButtonText: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 16,
-    color: '#88c9bf',
-  },
-  facebookButton: {
-    backgroundColor: '#1877F2', 
-    width: 232,
-    height: 40,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  googleButton: {
-    backgroundColor: '#FFFFFF',
-    width: 232,
-    height: 40,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  socialButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 12,
-    resizeMode: 'contain',
-  },
-  facebookButtonText: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  googleButtonText: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 14,
-    color: '#757575',
-    fontWeight: '500',
-  },
-  loginText: {
-    backgroundColor: 'transparent',
-    fontFamily: 'Roboto-Regular',
-    fontSize: 16,
-    color: '#88c9bf',
-    marginTop: 24,
-  },
-  logoImage: {
-    width: 120,
-    resizeMode: 'contain',
+    marginBottom: 8,
   },
 });

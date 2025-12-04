@@ -16,25 +16,48 @@ export interface LocationData {
   enderecoCompleto?: string;
 }
 
+export interface UserMetadata {
+  storageType: string;
+  hasProfilePicture?: boolean;
+  compression?: string;
+  timestamp: string;
+}
+
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  idade: string;
+  telefone: string;
+  username: string;
+  fotoPerfil: string | null;
+  dataCadastro: Timestamp | Date;
+  ultimaAtualizacao: Timestamp | Date;
+  tipoUsuario: 'pessoal';
+  metadata: UserMetadata;
+}
+
 export interface Animal {
   id: string; 
   dataCadastro: Timestamp; 
-  disponivel: boolean;
-  doencas: string;
-  dono: string;
+  disponivel: boolean; 
+  dono: string; 
   especie: 'Cachorro' | 'Gato'; 
-  exigencias: string[];
-  fotoPrincipal: string | null;
-  fotos: string[];
-  idade: 'Filhote' | 'Adulto' | 'Idoso';
-  localizacao: string; // Nome do bairro/cidade (para compatibilidade)
-  locationData?: LocationData; // Dados completos de localização
-  metadata: Metadata; 
-  nome: string;
-  porte: 'Pequeno' | 'Médio' | 'Grande';
-  saude: string[];
-  sexo: 'Macho' | 'Fêmea';
-  sobre: string;
-  temperamento: string[];
+  fotos: string[]; 
+  idade: 'Filhote' | 'Adulto' | 'Idoso'; 
+  localizacao: string; 
+  metadata: Metadata;
+  nome: string; 
+  porte: 'Pequeno' | 'Médio' | 'Grande'; 
+  sexo: 'Macho' | 'Fêmea'; 
   tipoCadastro: 'ADOÇÃO'; 
+  
+  doencas: string; 
+  exigencias: string[]; 
+  saude: string[]; 
+  sobre: string; 
+  temperamento: string[]; 
+  
+  fotoPrincipal?: string | null; 
+  locationData?: LocationData; 
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, StyleSheet, TextProps } from 'react-native';
 
 type TitleType = 'principal' | 'second';
-type TitleColor = 'preta' | 'azul' | 'amarela';
+type TitleColor = 'preta' | 'azul' | 'amarela' | 'roxo';
 
 interface SETitleProps extends TextProps {
   children: React.ReactNode;
@@ -13,7 +13,8 @@ interface SETitleProps extends TextProps {
 const colorMap = {
   preta: '#434343',
   azul: '#88C9BF', 
-  amarela: '#f7a800', 
+  amarela: '#f7a800',
+  roxo: '#6c69a7',
 };
 
 const SETitle: React.FC<SETitleProps> = ({
@@ -47,8 +48,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   second: {
-    fontFamily: 'Roboto-Regular',
+    fontFamily: 'Roboto-Medium',
     fontSize: 12,
+    fontWeight: 'semibold',
   },
 });
 

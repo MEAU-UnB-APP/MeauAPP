@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image, ScrollView, Modal, Alert } from 'react-native';
 import { useState } from 'react';
-import { MaterialIcons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db, storage } from "../../config/firebase";
 import { doc, setDoc } from 'firebase/firestore';
@@ -10,6 +10,8 @@ import SEButton from '../../components/SEButton';
 import SETextInput from '../../components/SETextInput'; 
 import { useNavigation } from '@react-navigation/native';
 import { registerForPushNotifications } from '../../services/fcmService';
+import { Colors } from '../../config/colors';
+import { Usuario } from '../../types/index';
 
 export function CadastroPessoal() {
   const navigation = useNavigation<any>();
@@ -154,7 +156,7 @@ export function CadastroPessoal() {
 
       const userDocRef = doc(db, "usuários", userId);
 
-      const userData = {
+      const userData: Omit<Usuario, 'id'> = {
         nome: nome.trim(),
         email: email.trim(),
         idade: idade.trim(),
@@ -173,6 +175,8 @@ export function CadastroPessoal() {
       };
 
       await setDoc(userDocRef, userData);
+      
+      console.log('✅ Documento do usuário criado no Firestore');
 
       if (fotoPerfil) {
         try {
@@ -211,16 +215,22 @@ export function CadastroPessoal() {
       setConfirmPassword('');
       setFotoPerfil(null);
 
+      // Aguardar um pouco para garantir que o documento do usuário foi criado no Firestore
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Registrar token FCM após cadastro bem-sucedido
-      // Adicionar delay para garantir que o documento do usuário foi criado no Firestore
-      setTimeout(async () => {
-        try {
-          await registerForPushNotifications();
-        } catch (notificationError: any) {
-          console.error('❌ Erro ao registrar notificações no cadastro:', notificationError);
-          // Não interrompe o fluxo se falhar
+      try {
+        console.log('🔔 Registrando notificações após cadastro...');
+        const token = await registerForPushNotifications();
+        if (token) {
+          console.log('✅ Token FCM registrado com sucesso após cadastro');
+        } else {
+          console.warn('⚠️ Token FCM não foi obtido após cadastro');
         }
-      }, 2000); // 2 segundos de delay
+      } catch (notificationError: any) {
+        console.error('❌ Erro ao registrar notificações no cadastro:', notificationError);
+        // Não interrompe o fluxo se falhar
+      }
 
       Alert.alert(
         "Sucesso!", 
@@ -323,10 +333,10 @@ export function CadastroPessoal() {
                 style={styles.eyeIcon}
                 onPress={() => setIsPasswordVisible(!isPasswordVisible)}
               >
-                <MaterialIcons 
+                <Icon 
                   name={isPasswordVisible ? "visibility" : "visibility-off"} 
-                  size={20} 
-                  color="#757575" 
+                  size={24} 
+                  color={Colors.preto} 
                 />
               </TouchableOpacity>
             </View>
@@ -343,10 +353,10 @@ export function CadastroPessoal() {
                 style={styles.eyeIcon}
                 onPress={() => setIsConfirmPasswordVisible(!isConfirmPasswordVisible)}
               >
-                <MaterialIcons 
+                <Icon 
                   name={isConfirmPasswordVisible ? "visibility" : "visibility-off"} 
-                  size={20} 
-                  color="#757575" 
+                  size={24} 
+                  color={Colors.preto} 
                 />
               </TouchableOpacity>
             </View>
@@ -360,55 +370,36 @@ export function CadastroPessoal() {
                 <View style={styles.photoContainer}>
                   <Image source={{ uri: fotoPerfil }} style={styles.photoImage} />
                   <TouchableOpacity style={styles.removePhotoButton} onPress={handleRemovePhoto}>
-                    <MaterialIcons name="close" size={20} color="#fff" />
+                    <Icon name="close" size={20} color={Colors.branco} />
                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity style={styles.addPhotoButton} onPress={handleAddPhoto}>
-                  <MaterialIcons name="control-point" size={32} color="#434343" />
+                  <Icon name="add-circle-outline" size={32} color={Colors.preto} />
                   <Text style={styles.addPhotoText}>Adicionar foto</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             <SEButton 
-              backgroundColor='#88C9BF' 
+              color={Colors.roxo}
               onPress={handleCadastro}
               disabled={loading}
             >
               {loading ? 'CADASTRANDO...' : 'Fazer Cadastro'}
             </SEButton>
             
-            <TouchableOpacity 
-              style={styles.secondaryButton}
+            <View style={styles.buttonSpacing} />
+            
+            <SEButton 
+              color={Colors.roxo}
+              variant="outlined"
               onPress={() => navigation.navigate('Login' as never)}
-              activeOpacity={0.7}
             >
-              <Text style={styles.secondaryButtonText}>Já tenho uma conta</Text>
-            </TouchableOpacity>
+              Já tenho uma conta
+            </SEButton>
           </View>
 
-          <Text style={styles.divider}>Ou cadastre-se com</Text>
-
-          <TouchableOpacity style={styles.facebookButton} onPress={() => console.log('Facebook cadastro')}>
-            <View style={styles.socialButtonContent}>
-              <Image 
-                source={require('../../assets/images/facebook-icon.png')}
-                style={styles.socialIcon}
-              />
-              <Text style={styles.facebookButtonText}>Cadastrar com Facebook</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.googleButton} onPress={() => console.log('Google cadastro')}>
-            <View style={styles.socialButtonContent}>
-              <Image 
-                source={require('../../assets/images/google-icon.png')}
-                style={styles.socialIcon}
-              />
-              <Text style={styles.googleButtonText}>Cadastrar com Google</Text>
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -426,7 +417,7 @@ export function CadastroPessoal() {
               style={styles.modalOption}
               onPress={takePhoto}
             >
-              <MaterialIcons name="camera-alt" size={24} color="#434343" />
+              <Icon name="camera-alt" size={24} color={Colors.preto} />
               <Text style={styles.modalOptionText}>Tirar foto</Text>
             </TouchableOpacity>
 
@@ -434,7 +425,7 @@ export function CadastroPessoal() {
               style={styles.modalOption}
               onPress={pickFromGallery}
             >
-              <MaterialIcons name="photo-library" size={24} color="#434343" />
+              <Icon name="photo-library" size={24} color={Colors.preto} />
               <Text style={styles.modalOptionText}>Escolher da galeria</Text>
             </TouchableOpacity>
 
@@ -457,7 +448,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.cinza,
     padding: 16,
   },
   content: {
@@ -472,7 +463,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   infoBox: {
-    backgroundColor: '#cfe9e5',
+    backgroundColor: Colors.rosaescuro,
     borderRadius: 4,
     padding: 12,
     marginBottom: 16,
@@ -480,22 +471,23 @@ const styles = StyleSheet.create({
   infoText: {
     fontFamily: 'Roboto-Regular',
     fontSize: 14,
-    color: '#434343',
+    color: Colors.preto,
     textAlign: 'center',
     lineHeight: 20,
   },
   sectionText: {
-    fontFamily: 'Roboto-Regular',
+    fontFamily: 'Roboto-Medium',
     fontSize: 14,
-    color: '#88c9bf',
+    color: Colors.roxo,
+    fontWeight: 'semibold',
     marginBottom: 16,
   },
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: Colors.branco,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Colors.preto,
     borderRadius: 4,
     marginBottom: 16,
   },
@@ -513,12 +505,12 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     width: 128,
     height: 128,
-    backgroundColor: '#e6e7e7',
+    backgroundColor: Colors.branco,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Colors.preto,
     borderStyle: 'dashed',
   },
   photoContainer: {
@@ -535,95 +527,24 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -8,
     right: -8,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: Colors.rosaescuro,
     borderRadius: 12,
     width: 24,
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: Colors.branco,
   },
   addPhotoText: {
     fontFamily: 'Roboto-Regular',
     fontSize: 14,
-    color: '#434343',
+    color: Colors.preto,
     marginTop: 8,
     textAlign: 'center',
   },
-  secondaryButton: {
-    backgroundColor: 'transparent',
-    borderRadius: 4,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#88c9bf',
-    marginTop: 8,
-  },
-  secondaryButtonText: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 12,
-    color: '#88c9bf',
-  },
-  divider: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 14,
-    color: '#757575',
-    marginVertical: 20,
-    textAlign: 'center',
-  },
-  facebookButton: {
-    backgroundColor: '#1877F2',
-    width: 232,
-    height: 40,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  googleButton: {
-    backgroundColor: '#FFFFFF',
-    width: 232,
-    height: 40,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.5,
-  },
-  socialButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  socialIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 12,
-    resizeMode: 'contain',
-  },
-  facebookButtonText: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
-  },
-  googleButtonText: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 14,
-    color: '#757575',
-    fontWeight: '500',
+  buttonSpacing: {
+    height: 16,
   },
   modalOverlay: {
     flex: 1,
@@ -631,7 +552,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.branco,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
@@ -640,7 +561,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: 'Roboto-Medium',
     fontSize: 18,
-    color: '#434343',
+    color: Colors.preto,
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -650,25 +571,25 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    gap: 16,
+    borderBottomColor: Colors.cinza,
   },
   modalOptionText: {
     fontFamily: 'Roboto-Regular',
     fontSize: 16,
-    color: '#434343',
+    color: Colors.preto,
+    marginLeft: 16,
   },
   cancelOption: {
     justifyContent: 'center',
     borderBottomWidth: 0,
     marginTop: 8,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: Colors.cinza,
     borderRadius: 8,
   },
   cancelOptionText: {
     fontFamily: 'Roboto-Medium',
     fontSize: 16,
-    color: '#FF6B6B',
+    color: Colors.rosaescuro,
     textAlign: 'center',
   },
 });

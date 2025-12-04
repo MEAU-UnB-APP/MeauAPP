@@ -1,63 +1,116 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.onNewChatCreated = void 0;
-const firestore_1 = require("firebase-functions/v2/firestore");
-const admin = __importStar(require("firebase-admin"));
+// functions/index.ts
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
 // Inicializar Firebase Admin
-// No Firebase Cloud Functions, usa Application Default Credentials automaticamente
-// O Service Account JSON só é necessário para testes locais (emulators)
 if (!admin.apps.length) {
     admin.initializeApp();
 }
 /**
+ * Cloud Function HTTP para enviar notificações push
+ * Esta função pode ser chamada diretamente do seu app React Native
+ */
+exports.sendNotification = functions.https.onRequest(async (req, res) => {
+    // Configurar CORS
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET, POST');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    // Tratar requisição OPTIONS (CORS preflight)
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+    try {
+        console.log('📬 Recebendo solicitação de notificação:', {
+            method: req.method,
+            body: req.body
+        });
+        const { token, notification, data } = req.body;
+        // Validação básica
+        if (!token) {
+            console.error('❌ Token FCM não fornecido');
+            return res.status(400).json({
+                success: false,
+                error: 'Token FCM é obrigatório'
+            });
+        }
+        // Configurar payload da notificação
+        const payload = {
+            token: token,
+            notification: {
+                title: (notification === null || notification === void 0 ? void 0 : notification.title) || 'Nova Notificação',
+                body: (notification === null || notification === void 0 ? void 0 : notification.body) || 'Você tem uma nova notificação',
+            },
+            data: Object.assign(Object.assign({}, data), { timestamp: new Date().toISOString(), click_action: 'FLUTTER_NOTIFICATION_CLICK' }),
+            android: {
+                priority: 'high',
+                notification: {
+                    channel_id: (data === null || data === void 0 ? void 0 : data.type) || 'default',
+                    sound: (notification === null || notification === void 0 ? void 0 : notification.sound) || 'default',
+                    icon: 'ic_notification',
+                    color: (data === null || data === void 0 ? void 0 : data.type) === 'adocao_confirmada' ? '#4CAF50' :
+                        (data === null || data === void 0 ? void 0 : data.type) === 'adocao_recusada' ? '#f44336' : '#2196F3',
+                    tag: (data === null || data === void 0 ? void 0 : data.type) || 'default'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: (notification === null || notification === void 0 ? void 0 : notification.sound) || 'default',
+                        badge: 1
+                    }
+                }
+            }
+        };
+        console.log('📤 Enviando payload:', payload);
+        // Enviar notificação usando Firebase Admin SDK
+        const response = await admin.messaging().send(payload);
+        console.log('✅ Notificação enviada com sucesso:', response);
+        res.status(200).json({
+            success: true,
+            message: 'Notificação enviada com sucesso',
+            messageId: response,
+            data: {
+                type: data === null || data === void 0 ? void 0 : data.type,
+                title: notification === null || notification === void 0 ? void 0 : notification.title,
+                body: notification === null || notification === void 0 ? void 0 : notification.body
+            }
+        });
+        return;
+    }
+    catch (error) {
+        console.error('❌ Erro ao enviar notificação:', error);
+        res.status(500).json({
+            success: false,
+            error: (error === null || error === void 0 ? void 0 : error.message) || 'Erro desconhecido',
+            code: (error === null || error === void 0 ? void 0 : error.code) || 'UNKNOWN_ERROR'
+        });
+        return;
+    }
+});
+/**
  * Cloud Function que envia notificação push quando um novo chat é criado
  * Trigger: onCreate na coleção 'chats'
- *
- * Quando um usuário demonstra interesse em adotar um animal, esta função
- * envia uma notificação para o dono do animal informando que alguém
- * demonstrou interesse.
  */
-exports.onNewChatCreated = (0, firestore_1.onDocumentCreated)('chats/{chatId}', async (event) => {
-    var _a;
+exports.onNewChatCreated = functions.firestore
+    .onDocumentCreated('chats/{chatId}', async (event) => {
+    const snap = event.data;
+    const context = event;
     try {
-        const chatData = (_a = event.data) === null || _a === void 0 ? void 0 : _a.data();
-        const chatId = event.params.chatId;
+        if (!snap) {
+            console.log('⚠️ Dados do chat não encontrados');
+            return null;
+        }
+        const chatData = snap.data();
+        const chatId = context.params.chatId;
         console.log('🔔 Novo chat criado:', chatId);
         if (!chatData) {
             console.log('⚠️ Dados do chat não encontrados');
+            return null;
+        }
+        // Ignorar chats de teste
+        if (chatData._testNotification || chatData._delayedTest) {
+            console.log('Ignorando chat de teste');
             return null;
         }
         // Verificar se o chat tem participantes
@@ -116,28 +169,32 @@ exports.onNewChatCreated = (0, firestore_1.onDocumentCreated)('chats/{chatId}', 
                 body: `${interestedUserName} demonstrou interesse em adotar ${animalName}`,
             },
             data: {
-                type: 'new_chat',
+                type: 'novo_chat',
                 chatId: chatId,
                 animalId: chatContext.animalId || '',
                 animalName: animalName,
+                timestamp: new Date().toISOString(),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
             },
             android: {
                 priority: 'high',
                 notification: {
-                    channelId: 'chat-updates',
+                    channel_id: 'novos_chats',
                     sound: 'default',
                     icon: 'ic_notification',
                     color: '#88c9bf',
-                },
+                    tag: 'new_chat'
+                }
             },
             apns: {
                 payload: {
                     aps: {
                         sound: 'default',
                         badge: 1,
-                    },
-                },
-            },
+                        category: 'NEW_CHAT'
+                    }
+                }
+            }
         };
         // Enviar notificação
         console.log('📤 Enviando notificação via FCM...');
@@ -148,6 +205,504 @@ exports.onNewChatCreated = (0, firestore_1.onDocumentCreated)('chats/{chatId}', 
     catch (error) {
         console.error('❌ Erro ao enviar notificação:', error);
         return null;
+    }
+});
+/**
+ * Função automática: Notificar nova mensagem no chat
+ * É acionada automaticamente quando uma nova mensagem é criada
+ */
+exports.notifyNewMessage = functions.firestore
+    .onDocumentCreated('chats/{chatId}/messages/{messageId}', async (event) => {
+    var _a, _b, _c, _d;
+    const snap = event.data;
+    const context = event;
+    try {
+        if (!snap) {
+            console.log('Dados da mensagem não encontrados');
+            return null;
+        }
+        const messageData = snap.data();
+        if (!messageData) {
+            console.log('Dados da mensagem não encontrados');
+            return null;
+        }
+        const { chatId, messageId } = context.params;
+        console.log('💬 Nova mensagem detectada:', { chatId, messageId });
+        // Ignorar mensagens do sistema
+        if (((_a = messageData.user) === null || _a === void 0 ? void 0 : _a._id) === 'system') {
+            console.log('Ignorando mensagem do sistema');
+            return null;
+        }
+        // Ignorar mensagens de teste
+        if (messageData._testNotification) {
+            console.log('Ignorando mensagem de teste');
+            return null;
+        }
+        // Buscar informações do chat
+        const chatRef = admin.firestore().collection('chats').doc(chatId);
+        const chatSnap = await chatRef.get();
+        if (!chatSnap.exists) {
+            console.log('Chat não encontrado');
+            return null;
+        }
+        const chatData = chatSnap.data();
+        const participants = (chatData === null || chatData === void 0 ? void 0 : chatData.participants) || [];
+        // Encontrar o receptor (usuário que não enviou a mensagem)
+        const senderId = (_b = messageData.user) === null || _b === void 0 ? void 0 : _b._id;
+        const receiverId = participants.find((id) => id !== senderId);
+        if (!receiverId) {
+            console.log('Receptor não encontrado');
+            return null;
+        }
+        // Buscar informações do receptor
+        const receiverRef = admin.firestore().collection('usuários').doc(receiverId);
+        const receiverSnap = await receiverRef.get();
+        if (!receiverSnap.exists) {
+            console.log('Receptor não encontrado no banco de dados');
+            return null;
+        }
+        const receiverData = receiverSnap.data();
+        const fcmToken = receiverData === null || receiverData === void 0 ? void 0 : receiverData.fcmToken;
+        if (!fcmToken) {
+            console.log('Receptor não tem token FCM');
+            return null;
+        }
+        // Buscar informações do remetente
+        const senderRef = admin.firestore().collection('usuários').doc(senderId);
+        const senderSnap = await senderRef.get();
+        const senderName = senderSnap.exists ?
+            (((_c = senderSnap.data()) === null || _c === void 0 ? void 0 : _c.nome) || ((_d = senderSnap.data()) === null || _d === void 0 ? void 0 : _d.username) || 'Alguém') : 'Alguém';
+        // Truncar mensagem se for muito longa
+        const messageText = messageData.text || '';
+        const truncatedMessage = messageText.length > 50 ?
+            messageText.substring(0, 50) + '...' : messageText;
+        // Configurar notificação
+        // IMPORTANTE: Incluir tanto 'notification' quanto 'data' para funcionar em foreground e background
+        const payload = {
+            token: fcmToken,
+            notification: {
+                title: '💬 Nova Mensagem',
+                body: `${senderName}: ${truncatedMessage}`,
+            },
+            data: {
+                type: 'nova_mensagem',
+                screenToOpen: 'ChatScreen',
+                chatId: chatId,
+                senderId: senderId,
+                messageText: truncatedMessage,
+                senderName: senderName,
+                timestamp: new Date().toISOString(),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    channel_id: 'mensagens',
+                    sound: 'default',
+                    icon: 'ic_notification',
+                    color: '#2196F3',
+                    tag: `chat_${chatId}`
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        badge: 1,
+                        contentAvailable: true
+                    }
+                }
+            }
+        };
+        console.log('📤 Enviando notificação de nova mensagem para:', receiverId);
+        const response = await admin.messaging().send(payload);
+        console.log('✅ Notificação de mensagem enviada:', response);
+        // Atualizar contador de notificações não lidas
+        await chatRef.update({
+            [`unread_${receiverId}`]: admin.firestore.FieldValue.increment(1),
+            lastNotificationAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        return response;
+    }
+    catch (error) {
+        console.error('❌ Erro ao enviar notificação de mensagem:', error);
+        return null;
+    }
+});
+/**
+ * Função automática: Notificar sobre status de adoção
+ * É acionada automaticamente quando um registro de adoção é criado
+ */
+exports.notifyAdoptionStatus = functions.firestore
+    .onDocumentCreated('adocoes/{adocaoId}', async (event) => {
+    const snap = event.data;
+    const context = event;
+    try {
+        if (!snap) {
+            console.log('Dados de adoção não encontrados');
+            return null;
+        }
+        const adoptionData = snap.data();
+        const { adocaoId } = context.params;
+        if (!adoptionData) {
+            console.log('Dados de adoção não encontrados');
+            return null;
+        }
+        console.log('🐾 Nova adoção detectada:', { adocaoId, status: adoptionData.status });
+        const status = adoptionData.status;
+        // Apenas processar status específicos
+        if (!['confirmada', 'recusada'].includes(status)) {
+            console.log('Status não suportado:', status);
+            return null;
+        }
+        const receiverId = adoptionData.interessadoId;
+        const senderName = adoptionData.donoName || 'O dono';
+        const animalName = adoptionData.animalName || 'o animal';
+        const chatId = adoptionData.chatId;
+        const animalId = adoptionData.animalId;
+        if (!receiverId) {
+            console.log('ID do receptor não encontrado');
+            return null;
+        }
+        // Buscar informações do receptor
+        const receiverRef = admin.firestore().collection('usuários').doc(receiverId);
+        const receiverSnap = await receiverRef.get();
+        if (!receiverSnap.exists) {
+            console.log('Receptor não encontrado');
+            return null;
+        }
+        const receiverData = receiverSnap.data();
+        const fcmToken = receiverData === null || receiverData === void 0 ? void 0 : receiverData.fcmToken;
+        if (!fcmToken) {
+            console.log('Receptor não tem token FCM');
+            return null;
+        }
+        let notificationConfig = {
+            title: '',
+            body: '',
+            sound: 'default'
+        };
+        if (status === 'confirmada') {
+            notificationConfig = {
+                title: '✅ Adoção Confirmada!',
+                body: `${senderName} confirmou sua adoção do ${animalName}!`,
+                sound: 'default'
+            };
+        }
+        else if (status === 'recusada') {
+            notificationConfig = {
+                title: '❌ Adoção Não Aprovada',
+                body: `${senderName} não aprovou sua solicitação para ${animalName}.`,
+                sound: 'default'
+            };
+        }
+        // Configurar payload
+        const payload = {
+            token: fcmToken,
+            notification: {
+                title: notificationConfig.title,
+                body: notificationConfig.body,
+            },
+            data: {
+                type: status === 'confirmada' ? 'adocao_confirmada' : 'adocao_recusada',
+                screenToOpen: 'ChatScreen',
+                chatId: chatId,
+                animalId: animalId,
+                timestamp: new Date().toISOString(),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    channel_id: 'adocoes',
+                    sound: notificationConfig.sound,
+                    icon: 'ic_notification',
+                    color: status === 'confirmada' ? '#4CAF50' : '#f44336',
+                    tag: 'adoption_status'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: notificationConfig.sound,
+                        badge: 1,
+                        category: status === 'confirmada' ? 'ADOPTION_CONFIRMED' : 'ADOPTION_DENIED'
+                    }
+                }
+            }
+        };
+        console.log('📤 Enviando notificação de adoção:', status);
+        const response = await admin.messaging().send(payload);
+        console.log('✅ Notificação de adoção enviada:', response);
+        return response;
+    }
+    catch (error) {
+        console.error('❌ Erro ao enviar notificação de adoção:', error);
+        return null;
+    }
+});
+/**
+ * Função para marcar outras adoções como recusadas quando uma adoção é confirmada
+ */
+exports.autoDenyOtherAdoptions = functions.firestore
+    .onDocumentCreated('adocoes/{adocaoId}', async (event) => {
+    const snap = event.data;
+    const context = event;
+    try {
+        if (!snap) {
+            console.log('Dados de adoção não encontrados');
+            return null;
+        }
+        const adoptionData = snap.data();
+        if (!adoptionData) {
+            console.log('Dados de adoção não encontrados');
+            return null;
+        }
+        const { adocaoId } = context.params;
+        // Apenas processar se for uma adoção confirmada
+        if (adoptionData.status !== 'confirmada') {
+            return null;
+        }
+        const animalId = adoptionData.animalId;
+        if (!animalId) {
+            console.log('Animal ID não encontrado');
+            return null;
+        }
+        console.log(`🔍 Buscando outras adoções pendentes para o animal: ${animalId}`);
+        // Buscar todas as outras adoções pendentes para o mesmo animal
+        const adoptionsRef = admin.firestore().collection('adocoes');
+        const querySnapshot = await adoptionsRef
+            .where('animalId', '==', animalId)
+            .where('status', '==', 'pendente')
+            .get();
+        if (querySnapshot.empty) {
+            console.log('Nenhuma outra adoção pendente encontrada');
+            return null;
+        }
+        console.log(`📝 Encontradas ${querySnapshot.size} adoções pendentes para marcar como recusadas`);
+        const batch = admin.firestore().batch();
+        const updates = [];
+        // Marcar cada adoção pendente como recusada automaticamente
+        querySnapshot.forEach((doc) => {
+            const adoptionDoc = doc.data();
+            // Pular a adoção que foi confirmada
+            if (doc.id === adocaoId) {
+                return;
+            }
+            // Atualizar status para recusada
+            batch.update(doc.ref, {
+                status: 'recusada',
+                reason: 'Animal adotado por outra pessoa',
+                autoDenied: true,
+                deniedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            updates.push({
+                adoptionId: doc.id,
+                interessadoId: adoptionDoc.interessadoId,
+                interessadoName: adoptionDoc.interessadoName
+            });
+        });
+        // Executar todas as atualizações em lote
+        await batch.commit();
+        // Enviar notificações para cada interessado recusado
+        for (const update of updates) {
+            try {
+                // Buscar token FCM do interessado
+                const userRef = admin.firestore().collection('usuários').doc(update.interessadoId);
+                const userSnap = await userRef.get();
+                if (userSnap.exists) {
+                    const userData = userSnap.data();
+                    const fcmToken = userData === null || userData === void 0 ? void 0 : userData.fcmToken;
+                    if (fcmToken) {
+                        const payload = {
+                            token: fcmToken,
+                            notification: {
+                                title: '❌ Adoção Não Disponível',
+                                body: `${adoptionData.animalName || 'O animal'} foi adotado por outra pessoa.`,
+                            },
+                            data: {
+                                type: 'adocao_recusada',
+                                animalId: animalId,
+                                animalName: adoptionData.animalName,
+                                timestamp: new Date().toISOString(),
+                                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+                            },
+                            android: {
+                                priority: 'high',
+                                notification: {
+                                    channel_id: 'adocoes',
+                                    sound: 'default',
+                                    icon: 'ic_notification',
+                                    color: '#f44336'
+                                }
+                            }
+                        };
+                        await admin.messaging().send(payload);
+                        console.log(`📤 Notificação de recusa automática enviada para: ${update.interessadoName}`);
+                    }
+                }
+            }
+            catch (error) {
+                console.error(`❌ Erro ao enviar notificação para ${update.interessadoId}:`, error);
+            }
+        }
+        console.log(`✅ ${updates.length} adoções pendentes foram marcadas como recusadas automaticamente`);
+        return {
+            success: true,
+            autoDeniedCount: updates.length
+        };
+    }
+    catch (error) {
+        console.error('❌ Erro ao processar recusas automáticas:', error);
+        return null;
+    }
+});
+/**
+ * Função para teste de notificações
+ */
+exports.testNotification = functions.https.onRequest(async (req, res) => {
+    try {
+        const { userId, type = 'test' } = req.body;
+        if (!userId) {
+            return res.status(400).json({ error: 'userId é obrigatório' });
+        }
+        // Buscar token FCM do usuário
+        const userRef = admin.firestore().collection('usuários').doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        const userData = userSnap.data();
+        const fcmToken = userData === null || userData === void 0 ? void 0 : userData.fcmToken;
+        if (!fcmToken) {
+            return res.status(400).json({ error: 'Usuário não tem token FCM' });
+        }
+        const notificationConfigs = {
+            test: {
+                title: '🧪 Teste de Notificação',
+                body: 'Esta é uma notificação de teste do sistema!',
+                sound: 'default'
+            },
+            nova_mensagem: {
+                title: '💬 Nova Mensagem (Teste)',
+                body: 'João: Olá! Como vai o animal?',
+                sound: 'default'
+            },
+            adocao_confirmada: {
+                title: '✅ Adoção Confirmada (Teste)',
+                body: 'Maria confirmou sua adoção do Rex!',
+                sound: 'default'
+            },
+            adocao_recusada: {
+                title: '❌ Adoção Recusada (Teste)',
+                body: 'Pedro não aprovou sua solicitação para o Luna.',
+                sound: 'default'
+            }
+        };
+        const config = notificationConfigs[type] || notificationConfigs.test;
+        const payload = {
+            token: fcmToken,
+            notification: {
+                title: config.title,
+                body: config.body,
+            },
+            data: {
+                type: type,
+                test: 'true',
+                timestamp: new Date().toISOString(),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    channel_id: 'testes',
+                    sound: config.sound,
+                    icon: 'ic_notification',
+                    color: type === 'adocao_confirmada' ? '#4CAF50' :
+                        type === 'adocao_recusada' ? '#f44336' : '#2196F3'
+                }
+            }
+        };
+        const response = await admin.messaging().send(payload);
+        res.status(200).json({
+            success: true,
+            message: 'Notificação de teste enviada',
+            messageId: response,
+            type: type
+        });
+        return;
+    }
+    catch (error) {
+        console.error('❌ Erro no teste:', error);
+        res.status(500).json({
+            success: false,
+            error: (error === null || error === void 0 ? void 0 : error.message) || 'Erro desconhecido'
+        });
+        return;
+    }
+});
+/**
+ * Função para enviar notificação de lembrete
+ */
+exports.sendReminderNotification = functions.https.onRequest(async (req, res) => {
+    try {
+        const { userId, title, body, data } = req.body;
+        if (!userId || !title || !body) {
+            return res.status(400).json({
+                error: 'userId, title e body são obrigatórios'
+            });
+        }
+        // Buscar token FCM do usuário
+        const userRef = admin.firestore().collection('usuários').doc(userId);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+        const userData = userSnap.data();
+        const fcmToken = userData === null || userData === void 0 ? void 0 : userData.fcmToken;
+        if (!fcmToken) {
+            return res.status(400).json({ error: 'Usuário não tem token FCM' });
+        }
+        const payload = {
+            token: fcmToken,
+            notification: {
+                title: title,
+                body: body,
+            },
+            data: Object.assign(Object.assign({ type: 'lembrete' }, data), { timestamp: new Date().toISOString(), click_action: 'FLUTTER_NOTIFICATION_CLICK' }),
+            android: {
+                priority: 'high',
+                notification: {
+                    channel_id: 'lembretes',
+                    sound: 'default',
+                    icon: 'ic_notification',
+                    color: '#FF9800'
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        badge: 1
+                    }
+                }
+            }
+        };
+        const response = await admin.messaging().send(payload);
+        res.status(200).json({
+            success: true,
+            message: 'Notificação de lembrete enviada',
+            messageId: response
+        });
+        return;
+    }
+    catch (error) {
+        console.error('❌ Erro ao enviar lembrete:', error);
+        res.status(500).json({
+            success: false,
+            error: (error === null || error === void 0 ? void 0 : error.message) || 'Erro desconhecido'
+        });
+        return;
     }
 });
 //# sourceMappingURL=index.js.map
