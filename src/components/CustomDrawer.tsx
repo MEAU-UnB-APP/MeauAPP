@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { DrawerContentScrollView, DrawerContentComponentProps } from '@react-navigation/drawer';
 import { View, Text, StyleSheet, Image, TouchableOpacity , Alert} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import SEButton from './SEButton';
 
 import { auth, db } from "../config/firebase";
 import { signOut } from 'firebase/auth';
@@ -11,20 +10,24 @@ import { CommonActions } from '@react-navigation/native';
 import { removeTokenFromFirestore } from '../services/fcmService';
 
 
-const DrawerItem = ({ label, onPress }: any) => (
+const DrawerItem = ({ label, onPress, iconName, backgroundColor }: any) => (
   <TouchableOpacity
     onPress={onPress}
-    style={styles.drawerItem}
+    style={[styles.drawerItem, { backgroundColor: backgroundColor || '#fff' }]}
   >
-    <Text style={styles.drawerLabel}>
-      {label}
-    </Text>
+    <View style={styles.drawerItemContent}>
+      {iconName && (
+        <Icon name={iconName} size={24} color="#757575" style={styles.drawerIcon} />
+      )}
+      <Text style={styles.drawerLabel}>
+        {label}
+      </Text>
+    </View>
   </TouchableOpacity>
 );
 
 export default function CustomDrawer(props: DrawerContentComponentProps) {
   const { navigation } = props;
-  const [openSection, setOpenSection] = useState<string | null>('User'); 
 
   const [userName, setUserName] = useState('Carregando...');
   const [userPhotoUrl, setUserPhotoUrl] = useState<string | null>(null);
@@ -68,23 +71,17 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
   const handleLogout = async () => {
     try {
       const user = auth.currentUser;
-      
-      // Remover token FCM do Firestore ANTES de fazer logout
-      // Isso garante que o usuário ainda está autenticado quando tentamos remover o token
       if (user) {
         try {
           console.log('🗑️ Removendo token FCM antes do logout...');
           await removeTokenFromFirestore(user.uid);
         } catch (tokenError) {
           console.error('⚠️ Erro ao remover token FCM no logout:', tokenError);
-          // Não impede o logout se houver erro ao remover token
         }
       }
 
-      // Fazer logout
       await signOut(auth);
       
-      // Após o logout, reseta a navegação para a tela de Introdução
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -95,10 +92,6 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       console.error("Erro ao sair:", error);
       Alert.alert("Erro", "Não foi possível sair. Tente novamente.");
     }
-  };
-
-  const toggleSection = (sectionName: string) => {
-    setOpenSection(openSection === sectionName ? null : sectionName);
   };
 
   return (
@@ -129,38 +122,33 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       </View>
 
       <View>
-        <TouchableOpacity 
-          style={[styles.sectionHeader, { backgroundColor: '#88c9bf' }]} 
-          onPress={() => toggleSection('User')}
-        >
-          <Text style={styles.sectionLabel}>{userName}</Text>
-          <Icon name={openSection === 'User' ? 'expand-less' : 'expand-more'} size={24} color="#757575" />
-        </TouchableOpacity>
-        {openSection === 'User' && (
-          <View style={styles.subItemContainer}>
-            <DrawerItem label="Meus Pets" onPress={() => navigation.navigate('MeusPets')} />
-            <DrawerItem label="Favoritos" onPress={() => navigation.navigate('Favoritos')} />
-            <DrawerItem label="Chat" onPress={() => navigation.navigate('Chat')} />
-          </View>
-        )}
-
-        <TouchableOpacity 
-          style={[styles.sectionHeader, { backgroundColor: '#fee29b' }]} 
-          onPress={() => toggleSection('Atalhos')}
-        >
-          <View style={styles.sectionTitleContainer}>
-            <Icon name="pets" size={24} color="#757575" />
-            <Text style={styles.sectionLabel}>Atalhos</Text>
-          </View>
-          <Icon name={openSection === 'Atalhos' ? 'expand-less' : 'expand-more'} size={24} color="#757575" />
-        </TouchableOpacity>
-        {openSection === 'Atalhos' && (
-          <View style={styles.subItemContainer}>
-            <DrawerItem label="Cadastrar um pet" onPress={() => navigation.navigate('Cadastrar Animal')} />
-            <DrawerItem label="Adotar um pet" onPress={() => navigation.navigate('Adotar')} />
-          </View>
-        )}
-        
+        <View style={styles.nameItem}>
+          <Text style={styles.nameLabel}>{userName}</Text>
+        </View>
+        <DrawerItem 
+          label="Meus Pets" 
+          onPress={() => navigation.navigate('MeusPets')}
+          iconName="pets"
+          backgroundColor="#ffc1cc"
+        />
+        <DrawerItem 
+          label="Chat" 
+          onPress={() => navigation.navigate('Chat')}
+          iconName="chat-bubble-outline"
+          backgroundColor="#e6e7e8"
+        />
+        <DrawerItem 
+          label="Cadastrar um pet" 
+          onPress={() => navigation.navigate('Cadastrar Animal')}
+          iconName="add-circle-outline"
+          backgroundColor="#cfe9e5"
+        />
+        <DrawerItem 
+          label="Adotar um pet" 
+          onPress={() => navigation.navigate('Adotar')}
+          iconName="pets"
+          backgroundColor="#fee29b"
+        />
       </View>
       
       <View style={styles.footer}>
@@ -192,52 +180,51 @@ const styles = StyleSheet.create({
   },
 
   drawerItem: {
-    backgroundColor: '#fff',
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderBottomWidth: 1, 
-    borderBottomColor: '#f0f0f0', 
+    borderBottomColor: '#f0f0f0',
+  },
+  drawerItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  drawerIcon: {
+    marginRight: 12,
   },
   drawerLabel: {
     fontSize: 14,
     fontFamily: 'Roboto-Regular',
     color: '#434343',
   },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
+  nameItem: {
+    backgroundColor: '#88c9bf',
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomWidth: 1, 
+    borderBottomColor: '#f0f0f0',
   },
-
-  sectionTitleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionLabel: {
-    fontSize: 15,
+  nameLabel: {
+    fontSize: 14,
     fontFamily: 'Roboto-Medium',
     color: '#434343',
-    marginLeft: 16,
-  },
- 
-  subItemContainer: {
-    paddingLeft: 16, 
+    fontWeight: 'semibold',
   },
   footer: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: 16,
+    paddingVertical: 16,
+    marginHorizontal: 0,
+    paddingHorizontal: 0,
+    width: '100%',
+    alignSelf: 'stretch',
   },
   logoutButton: {
     width: '100%',
     backgroundColor: '#88c9bf',
     paddingVertical: 12,
     alignItems: 'center',
+    alignSelf: 'stretch',
   },
   logoutButtonText: {
     color: '#434343',

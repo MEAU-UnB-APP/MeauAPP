@@ -6,16 +6,8 @@ import CustomDrawer from "../components/CustomDrawer";
 // Telas
 import { Adotar } from "./screens/Adotar";
 import { CadastroAnimal } from "./screens/CadastroAnimal";
-import { MeuPerfil } from "./screens/MeuPerfil";
 import { MeusPets } from "./screens/MeusPets";
-import { Favoritos } from "./screens/Favoritos";
-import { Eventos } from "./screens/Eventos";
-import { Historias } from "./screens/Historias";
-import { Legislacao } from "./screens/Legislacao";
-import { Privacidade } from "./screens/Privacidade";
-import { Termo } from "./screens/Termo";
 import { Chat } from "./screens/Chat";
-import { Dicas } from "./screens/Dicas";
 import { InformacoesPets } from "./screens/InformacoesPets";
 import { IndividualChatScreen } from "./screens/IndividualChatScreen";
 
@@ -71,19 +63,6 @@ export function AppDrawer() {
         }}
       />
       <Drawer.Screen
-        name="MeuPerfil"
-        component={MeuPerfil}
-        options={{
-          title: "Meu Perfil",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
         name="MeusPets"
         component={MeusPets}
         options={{
@@ -97,101 +76,10 @@ export function AppDrawer() {
         }}
       />
       <Drawer.Screen
-        name="Favoritos"
-        component={Favoritos}
-        options={{
-          title: "Favoritos",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "##434343",
-          },
-        }}
-      />
-      <Drawer.Screen
         name="Chat"
         component={Chat}
         options={{
           title: "Chat",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
-        name="Dicas"
-        component={Dicas}
-        options={{
-          title: "Dicas",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
-        name="Eventos"
-        component={Eventos}
-        options={{
-          title: "Eventos",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
-        name="Legislacao"
-        component={Legislacao}
-        options={{
-          title: "Legislação",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
-        name="Termo"
-        component={Termo}
-        options={{
-          title: "Termo de Adoção",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
-        name="Historias"
-        component={Historias}
-        options={{
-          title: "Histórias de Adoção",
-          headerStyle: { backgroundColor: "#88c9bf" },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: "#434343",
-          },
-        }}
-      />
-      <Drawer.Screen
-        name="Privacidade"
-        component={Privacidade}
-        options={{
-          title: "Política de Privacidade",
           headerStyle: { backgroundColor: "#88c9bf" },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
