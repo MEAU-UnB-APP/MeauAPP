@@ -1,12 +1,23 @@
-// services/notificationService.js
+// services/notificationService.ts
 import { db, auth } from '../config/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+
+interface SendNewMessageParams {
+  chatRoomID: string;
+  messageText: string;
+  senderName: string;
+}
+
+interface SendAdoptionParams {
+  chatRoomID: string;
+  animalName: string;
+}
 
 /**
  * Função para enviar notificação de NOVA MENSAGEM (chat real)
  * Esta função é chamada quando um usuário envia uma mensagem no chat
  */
-export const sendNewMessageNotification = async ({ chatRoomID, messageText, senderName }) => {
+export const sendNewMessageNotification = async ({ chatRoomID, messageText, senderName }: SendNewMessageParams) => {
   console.log('💬 [sendNewMessageNotification] Iniciando notificação para chat real');
   
   try {
@@ -94,7 +105,7 @@ export const sendNewMessageNotification = async ({ chatRoomID, messageText, send
  * Função para enviar notificação de ADOÇÃO APROVADA (chat real)
  * Esta função é chamada quando o dono aprova uma adoção
  */
-export const sendAdoptionApprovedNotification = async ({ chatRoomID, animalName }) => {
+export const sendAdoptionApprovedNotification = async ({ chatRoomID, animalName }: SendAdoptionParams) => {
   console.log('✅ [sendAdoptionApprovedNotification] Iniciando notificação de adoção aprovada');
   
   try {
@@ -199,7 +210,7 @@ export const sendAdoptionApprovedNotification = async ({ chatRoomID, animalName 
  * Função para enviar notificação de ADOÇÃO RECUSADA (chat real)
  * Esta função é chamada quando o dono recusa uma adoção
  */
-export const sendAdoptionRejectedNotification = async ({ chatRoomID, animalName }) => {
+export const sendAdoptionRejectedNotification = async ({ chatRoomID, animalName }: SendAdoptionParams) => {
   console.log('❌ [sendAdoptionRejectedNotification] Iniciando notificação de adoção recusada');
   
   try {
@@ -449,6 +460,10 @@ export const sendDelayedTestNotification = async () => {
 
       async function createDelayedChat() {
         try {
+          if (!currentUser) {
+            throw new Error('Usuário não autenticado');
+          }
+          
           console.log('⏰ [7] Criando chat de teste DELAYED...');
           
           const testChatData = {
@@ -488,11 +503,11 @@ export const sendDelayedTestNotification = async () => {
             }
           });
           
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ [ERROR] Erro no delayed chat:', error);
           resolve({
             success: false,
-            message: 'Erro ao criar chat delayed: ' + error.message
+            message: 'Erro ao criar chat delayed: ' + (error?.message || String(error))
           });
         }
       }
