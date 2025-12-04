@@ -394,7 +394,7 @@ export function CadastroPessoal() {
             <SEButton 
               color={Colors.roxo}
               variant="outlined"
-              onPress={() => navigation.navigate('Login' as never)}
+              onPress={() => navigation.navigate('Introducao' as never)}
             >
               Já tenho uma conta
             </SEButton>
