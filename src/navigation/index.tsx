@@ -20,11 +20,9 @@ export function AppDrawer() {
     <Drawer.Navigator
       screenOptions={({ navigation }) => ({
         drawerStyle: {
-          backgroundColor: Colors.branco,
+          backgroundColor: Colors.roxoclaro,
           margin: 0,
           padding: 0,
-          borderRightWidth: 2,
-          borderRightColor: Colors.preto,
         },
         drawerContentStyle: {
           backgroundColor: Colors.branco,

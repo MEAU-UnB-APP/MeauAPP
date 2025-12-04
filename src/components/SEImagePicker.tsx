@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
+import { Colors } from '../config/colors';
 
 interface SEImagePickerProps {
   imageUris: string[];
@@ -187,7 +188,7 @@ const SEImagePicker: React.FC<SEImagePickerProps> = ({
           <Icon 
             name="control-point" 
             size={24} 
-            color={imageUris.length > 0 ? "#88C9BF" : "#757575"} 
+            color={imageUris.length > 0 ? Colors.roxo : Colors.preto} 
           />
           <Text style={[
             styles.placeholderText,
@@ -276,7 +277,7 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 128,
     borderRadius: 8,
-    backgroundColor: '#fafafa',
+    backgroundColor: Colors.cinza,
     padding: 16,
   },
   header: {
@@ -293,7 +294,7 @@ const styles = StyleSheet.create({
   removeAllText: {
     fontFamily: 'Roboto-Regular',
     fontSize: 12,
-    color: '#FF6B6B',
+    color: Colors.rosaescuro,
     textDecorationLine: 'underline',
   },
   mainContainer: {
@@ -313,8 +314,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   placeholderWithImages: {
-    backgroundColor: '#fff',
-    borderColor: '#88C9BF',
+    backgroundColor: Colors.branco,
+    borderColor: Colors.roxo,
   },
   placeholderText: {
     fontFamily: 'Roboto-Regular',
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   placeholderTextWithImages: {
-    color: '#88C9BF',
+    color: Colors.roxo,
     fontSize: 10,
   },
   imagesScrollView: {
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.branco,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
   cancelOptionText: {
     fontFamily: 'Roboto-Medium',
     fontSize: 16,
-    color: '#FF6B6B',
+    color: Colors.rosaescuro,
     textAlign: 'center',
   },
 });

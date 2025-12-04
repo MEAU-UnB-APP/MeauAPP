@@ -14,6 +14,7 @@ export function Login() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigation = useNavigation<any>();
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleLogin = async () => {
     if (!username || !password) {
@@ -21,6 +22,7 @@ export function Login() {
       return;
     }
 
+    setErrorMessage(null);
     setLoading(true);
 
     try {
@@ -45,9 +47,23 @@ export function Login() {
         routes: [{ name: 'AppDrawer', params: { screen: 'Adotar' } }],
       });
     } catch (error: any) {
-      Alert.alert('Erro ao fazer login', error?.message ?? 'Tente novamente.');
+      setErrorMessage('Falha: senha ou e-mail incorreto!');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUsernameChange = (text: string) => {
+    setUsername(text);
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (errorMessage) {
+      setErrorMessage(null);
     }
   };
 
@@ -64,7 +80,7 @@ export function Login() {
             placeholder="E-mail"
             placeholderTextColor={Colors.preto}
             value={username}
-            onChangeText={setUsername}
+            onChangeText={handleUsernameChange}
             autoCapitalize="none"
           />
           
@@ -74,7 +90,7 @@ export function Login() {
               placeholder="Senha"
               placeholderTextColor={Colors.preto}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               secureTextEntry={!isPasswordVisible}
             />
             <TouchableOpacity 
@@ -88,6 +104,10 @@ export function Login() {
               />
             </TouchableOpacity>
           </View>
+          
+          {errorMessage && (
+            <Text style={styles.errorLabel}>{errorMessage}</Text>
+          )}
           
           <View style={styles.buttonWrapper}>
             <SEButton
@@ -119,6 +139,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.cinza,
     padding: 16,
+    overflow: 'hidden',
   },
   backgroundImage: {
     position: 'absolute',
@@ -130,10 +151,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   formContainer: {
     width: '100%',
     maxWidth: 300,
+    alignSelf: 'center',
   },
   input: {
     backgroundColor: Colors.branco,
@@ -170,5 +193,17 @@ const styles = StyleSheet.create({
   },
   buttonSpacing: {
     height: 16,
+  },
+  errorLabel: {
+    fontFamily: 'Roboto-Regular',
+    fontSize: 16,
+    color: Colors.preto,
+    backgroundColor: Colors.rosa,
+    textAlign: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+    marginTop: 8,
+    marginBottom: 8,
   },
 });

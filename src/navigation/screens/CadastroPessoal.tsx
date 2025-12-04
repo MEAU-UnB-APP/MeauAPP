@@ -476,9 +476,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   sectionText: {
-    fontFamily: 'Roboto-Regular',
+    fontFamily: 'Roboto-Medium',
     fontSize: 14,
     color: Colors.roxo,
+    fontWeight: 'semibold',
     marginBottom: 16,
   },
   passwordContainer: {
