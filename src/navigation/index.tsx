@@ -1,8 +1,9 @@
 import { NavigatorScreenParams, DrawerActions, useNavigation } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { IconButton } from "react-native-paper";
 import CustomDrawer from "../components/CustomDrawer";
+import { Colors } from "../config/colors";
+
 // Telas
 import { Adotar } from "./screens/Adotar";
 import { CadastroAnimal } from "./screens/CadastroAnimal";
@@ -19,29 +20,29 @@ export function AppDrawer() {
     <Drawer.Navigator
       screenOptions={({ navigation }) => ({
         drawerStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: Colors.branco,
           margin: 0,
           padding: 0,
           borderRightWidth: 2,
-          borderRightColor: "#757575",
+          borderRightColor: Colors.preto,
         },
         drawerContentStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: Colors.branco,
           margin: 0,
           padding: 0,
         },
         overlayColor: "transparent",
-        headerStyle: { backgroundColor: "#88c9bf" },
+        headerStyle: { backgroundColor: Colors.roxo },
         headerTitleStyle: {
           fontFamily: "Roboto-Medium",
           fontSize: 20,
-          color: "#434343",
+          color: Colors.branco,
         },
-        headerTintColor: "#434343",
+        headerTintColor: Colors.branco,
         headerLeft: () => (
           <IconButton
             icon="menu"
-            iconColor="#434343"
+            iconColor={Colors.branco}
             size={25}
             onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
           />
@@ -54,12 +55,13 @@ export function AppDrawer() {
         component={Adotar}
         options={{
           title: "Adotar",
-          headerStyle: { backgroundColor: "#88c9bf" },
+          headerStyle: { backgroundColor: Colors.verde },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: "#434343",
+            color: Colors.branco,
           },
+          headerTintColor: Colors.branco,
         }}
       />
       <Drawer.Screen
@@ -67,12 +69,13 @@ export function AppDrawer() {
         component={MeusPets}
         options={{
           title: "Meus Pets",
-          headerStyle: { backgroundColor: "#88c9bf" },
+          headerStyle: { backgroundColor: Colors.rosaescuro },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: "#434343",
+            color: Colors.branco,
           },
+          headerTintColor: Colors.branco,
         }}
       />
       <Drawer.Screen
@@ -80,12 +83,13 @@ export function AppDrawer() {
         component={Chat}
         options={{
           title: "Chat",
-          headerStyle: { backgroundColor: "#88c9bf" },
+          headerStyle: { backgroundColor: Colors.rosa },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: "#434343",
+            color: Colors.branco,
           },
+          headerTintColor: Colors.branco,
         }}
       />
       <Drawer.Screen
@@ -93,12 +97,13 @@ export function AppDrawer() {
         component={CadastroAnimal}
         options={{
           title: "Cadastrar Animal",
-          headerStyle: { backgroundColor: "#88c9bf" },
+          headerStyle: { backgroundColor: Colors.roxoclaro },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: "#434343",
+            color: Colors.branco,
           },
+          headerTintColor: Colors.branco,
         }}
       />
       <Drawer.Screen
@@ -106,12 +111,13 @@ export function AppDrawer() {
         component={InformacoesPets}
         options={{
           title: "Informações do Pet",
-          headerStyle: { backgroundColor: "#88c9bf" },
+          headerStyle: { backgroundColor: Colors.roxo },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: "#434343",
+            color: Colors.branco,
           },
+          headerTintColor: Colors.branco,
         }}
       />
       <Drawer.Screen
@@ -119,13 +125,13 @@ export function AppDrawer() {
         component={IndividualChatScreen}
         options={({ route }: any) => ({
           title: route.params?.chatTitle || "Chat",
-          headerStyle: { backgroundColor: "#88c9bf" },
+          headerStyle: { backgroundColor: Colors.rosa },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: "#434343",
+            color: Colors.branco,
           },
-          headerTintColor: "#434343",
+          headerTintColor: Colors.branco,
           drawerItemStyle: { display: "none" },
         })}
       />

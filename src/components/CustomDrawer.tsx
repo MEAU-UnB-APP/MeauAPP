@@ -8,16 +8,17 @@ import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { CommonActions } from '@react-navigation/native';
 import { removeTokenFromFirestore } from '../services/fcmService';
+import { Colors } from '../config/colors';
 
 
 const DrawerItem = ({ label, onPress, iconName, backgroundColor }: any) => (
   <TouchableOpacity
     onPress={onPress}
-    style={[styles.drawerItem, { backgroundColor: backgroundColor || '#fff' }]}
+    style={[styles.drawerItem, { backgroundColor: backgroundColor || Colors.roxoclaro }]}
   >
     <View style={styles.drawerItemContent}>
       {iconName && (
-        <Icon name={iconName} size={24} color="#757575" style={styles.drawerIcon} />
+        <Icon name={iconName} size={24} color={Colors.branco} style={styles.drawerIcon} />
       )}
       <Text style={styles.drawerLabel}>
         {label}
@@ -99,7 +100,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       {...props}
       contentContainerStyle={{
         flexGrow: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: Colors.roxoclaro,
         padding: 0,
         margin: 0,
         alignItems: 'stretch',
@@ -129,25 +130,25 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           label="Meus Pets" 
           onPress={() => navigation.navigate('MeusPets')}
           iconName="pets"
-          backgroundColor="#ffc1cc"
+          backgroundColor={Colors.rosaescuro}
         />
         <DrawerItem 
           label="Chat" 
           onPress={() => navigation.navigate('Chat')}
           iconName="chat-bubble-outline"
-          backgroundColor="#e6e7e8"
+          backgroundColor={Colors.rosa}
         />
         <DrawerItem 
           label="Cadastrar um pet" 
           onPress={() => navigation.navigate('Cadastrar Animal')}
           iconName="add-circle-outline"
-          backgroundColor="#cfe9e5"
+          backgroundColor={Colors.roxoclaro}
         />
         <DrawerItem 
           label="Adotar um pet" 
           onPress={() => navigation.navigate('Adotar')}
           iconName="pets"
-          backgroundColor="#fee29b"
+          backgroundColor={Colors.verde}
         />
       </View>
       
@@ -162,28 +163,24 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
 
 const styles = StyleSheet.create({
   drawerScroll: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.branco,
     padding: 0,
     margin: 0,
   },
   header: {
-    backgroundColor: '#88c9bf',
+    backgroundColor: Colors.roxo,
     paddingTop: 40,
     paddingLeft: 16,
     paddingBottom: 20,
   },
   profileImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginBottom: 12,
+    width: 80,
+    height: 80,
+    borderRadius: 10,
   },
-
   drawerItem: {
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderBottomWidth: 1, 
-    borderBottomColor: '#f0f0f0',
   },
   drawerItemContent: {
     flexDirection: 'row',
@@ -193,21 +190,19 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   drawerLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Roboto-Regular',
-    color: '#434343',
+    color: Colors.branco,
   },
   nameItem: {
-    backgroundColor: '#88c9bf',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1, 
-    borderBottomColor: '#f0f0f0',
+    backgroundColor: Colors.roxo,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
   nameLabel: {
-    fontSize: 14,
+    fontSize: 20,
     fontFamily: 'Roboto-Medium',
-    color: '#434343',
+    color: Colors.branco,
     fontWeight: 'semibold',
   },
   footer: {
@@ -221,13 +216,13 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     width: '100%',
-    backgroundColor: '#88c9bf',
+    backgroundColor: Colors.roxo,
     paddingVertical: 12,
     alignItems: 'center',
     alignSelf: 'stretch',
   },
   logoutButtonText: {
-    color: '#434343',
+    color: Colors.branco,
     fontFamily: 'Roboto-Medium',
     fontSize: 14,
   },

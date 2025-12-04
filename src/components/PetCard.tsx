@@ -27,24 +27,12 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
           <Text style={styles.cardTitle}>{pet.nome}</Text>
 
           <View style={styles.iconContainer}>
-            {/* Botão para abrir conversa */}
             <ChatButton
               animalId={pet.id}
               animalName={pet.nome}
               donoId={pet.dono}
               size={24}
               iconColor="#434343"
-            />
-            
-            {/* Botão de "curtir" */}
-            <IconButton
-              icon="heart-outline"
-              size={24}
-              iconColor="#434343"
-              onPress={(e) => {
-                e.stopPropagation(); // Impede que o clique propague para o card
-                console.log(`Favoritou ${pet.nome}`);
-              }}
             />
           </View>
         </View>
@@ -73,8 +61,7 @@ const styles = StyleSheet.create({
     height: CARD.height,
     alignSelf: 'center',
     marginVertical: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
+    borderRadius: 10,
   },
   cardHeader: {
     height: CARD.headerH,
