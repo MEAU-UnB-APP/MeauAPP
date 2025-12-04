@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { View, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { Card, Text } from 'react-native-paper';
+import { Card, Text, IconButton } from 'react-native-paper';
 import { Animal } from '../types/index';
 import ChatButton from './ChatButton';
 import { Colors } from '../config/colors';
@@ -16,24 +16,63 @@ const FOOTER_H = CARD.height - CARD.headerH - CARD.imageH;
 interface PetCardProps {
   pet: Animal;
   onPress: () => void;
+  isOwner?: boolean;
+  onToggleVisibility?: (isVisible: boolean) => void;
 }
 
-export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
+export const PetCard: React.FC<PetCardProps> = ({ 
+  pet, 
+  onPress, 
+  isOwner = false,
+  onToggleVisibility 
+}) => {
   const placeholderImage = 'https://placehold.co/344x183/e0e0e0/757575?text=Sem+Foto';
+  const [disponivel, setDisponivel] = React.useState(pet.disponivel);
+
+  // Sincronizar estado quando o pet mudar
+  React.useEffect(() => {
+    setDisponivel(pet.disponivel);
+  }, [pet.disponivel]);
+
+  const handleToggleVisibility = () => {
+    if (onToggleVisibility) {
+      const novoEstado = !disponivel;
+      setDisponivel(novoEstado);
+      onToggleVisibility(novoEstado);
+    }
+  };
+
+  // 60% transparente = 40% de opacidade (0.4)
+  const cardOpacity = isOwner && !disponivel ? 0.4 : 1;
+  const headerColor = isOwner ? Colors.rosaescuro : Colors.roxo;
+  const footerColor = isOwner ? Colors.rosa : Colors.roxoclaro;
+  const cardBgColor = isOwner ? Colors.rosa : Colors.roxoclaro;
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
-      <Card style={styles.card} mode="elevated">
-        <View style={styles.cardHeader}>
+      <Card style={[styles.card, { opacity: cardOpacity, backgroundColor: cardBgColor }]} mode="elevated">
+        <View style={[styles.cardHeader, { backgroundColor: headerColor }]}>
           <Text style={styles.cardTitle}>{pet.nome}</Text>
           <View style={styles.iconContainer}>
-            <ChatButton
-              animalId={pet.id}
-              animalName={pet.nome}
-              donoId={pet.dono}
-              size={24}
-              iconColor={Colors.branco}
-            />
+            {isOwner ? (
+              <IconButton
+                icon={disponivel ? "eye" : "eye-off"}
+                size={24}
+                iconColor={Colors.branco}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleToggleVisibility();
+                }}
+              />
+            ) : (
+              <ChatButton
+                animalId={pet.id}
+                animalName={pet.nome}
+                donoId={pet.dono}
+                size={24}
+                iconColor={Colors.branco}
+              />
+            )}
           </View>
         </View>
 
@@ -42,7 +81,7 @@ export const PetCard: React.FC<PetCardProps> = ({ pet, onPress }) => {
           style={styles.image} 
         />
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, { backgroundColor: footerColor }]}>
           <View style={styles.tagsRow}>
             <Text style={styles.tag}>{pet.sexo}</Text>
             <Text style={styles.tag}>{pet.idade}</Text>
@@ -62,11 +101,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginVertical: 8,
     borderRadius: 20,
-    backgroundColor: Colors.roxoclaro,
     overflow: 'hidden',
   },
   cardHeader: {
-    backgroundColor: Colors.roxo,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 12,
@@ -94,7 +131,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.roxoclaro,
   },
   tagsRow: {
     width: '100%',

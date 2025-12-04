@@ -9,7 +9,6 @@ import { Adotar } from "./screens/Adotar";
 import { CadastroAnimal } from "./screens/CadastroAnimal";
 import { MeusPets } from "./screens/MeusPets";
 import { Chat } from "./screens/Chat";
-import { InformacoesPets } from "./screens/InformacoesPets";
 import { IndividualChatScreen } from "./screens/IndividualChatScreen";
 
 const Drawer = createDrawerNavigator();
@@ -96,20 +95,6 @@ export function AppDrawer() {
         options={{
           title: "Cadastrar Animal",
           headerStyle: { backgroundColor: Colors.roxoclaro },
-          headerTitleStyle: {
-            fontFamily: "Roboto-Medium",
-            fontSize: 20,
-            color: Colors.branco,
-          },
-          headerTintColor: Colors.branco,
-        }}
-      />
-      <Drawer.Screen
-        name="InformacoesPets"
-        component={InformacoesPets}
-        options={{
-          title: "Informações do Pet",
-          headerStyle: { backgroundColor: Colors.roxo },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
