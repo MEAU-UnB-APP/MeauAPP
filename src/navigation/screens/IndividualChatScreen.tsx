@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { GiftedChat, IMessage, Avatar, Bubble } from 'react-native-gifted-chat';
+import { GiftedChat, IMessage, Avatar, Bubble, InputToolbar } from 'react-native-gifted-chat';
 import { 
   collection, 
   addDoc, 
@@ -17,7 +17,7 @@ import {
   where
 } from 'firebase/firestore';
 import { Text, View, Image, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { Button, Dialog, Portal, Provider } from 'react-native-paper';
+import { Provider } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, db } from '../../config/firebase'; 
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -25,6 +25,9 @@ import {
   sendAdoptionApprovedNotification, 
   sendAdoptionRejectedNotification 
 } from '../../services/notificationService';
+import { Colors } from '../../config/colors';
+import AdoptionActionButtons from '../../components/AdoptionActionButtons';
+import AdoptionDialog from '../../components/AdoptionDialog';
 
 type RootStackParamList = {
   IndividualChat: {
@@ -134,31 +137,10 @@ export function IndividualChatScreen() {
       title: chatTitle,
       headerRight: () => (
         isPetOwner && !animalAdopted ? (
-          <View style={{ flexDirection: 'row', marginRight: 8, alignItems: 'center', marginTop: 120 }}>
-            <TouchableOpacity
-              onPress={() => setDialogRejectionVisible(true)}
-              style={{
-                backgroundColor: '#ff4444',
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 4,
-                marginRight: 6,
-              }}
-            >
-              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Recusar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setDialogVisible(true)}
-              style={{
-                backgroundColor: '#4CAF50',
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                borderRadius: 4,
-              }}
-            >
-              <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Aprovar</Text>
-            </TouchableOpacity>
-          </View>
+          <AdoptionActionButtons
+            onApprove={() => setDialogVisible(true)}
+            onReject={() => setDialogRejectionVisible(true)}
+          />
         ) : null
       )
     });
@@ -425,14 +407,14 @@ export function IndividualChatScreen() {
       paddingHorizontal: 20,
     }}>
       <View style={{
-        backgroundColor: '#e8f5e8',
+        backgroundColor: Colors.rosa,
         padding: 10,
-        borderRadius: 20,
+        borderRadius: 8,
         borderWidth: 1,
-        borderColor: '#4CAF50',
+        borderColor: Colors.roxo,
       }}>
         <Text style={{
-          color: '#2e7d32',
+          color: Colors.preto,
           textAlign: 'center',
           fontWeight: 'bold',
         }}>
@@ -472,14 +454,28 @@ export function IndividualChatScreen() {
     <Bubble
       {...props}
       wrapperStyle={{
-        left: { backgroundColor: '#f0f0f0' },
-        right: { backgroundColor: '#4CAF50' },
+        left: { backgroundColor: Colors.cinza },
+        right: { backgroundColor: Colors.roxo },
       }}
       textStyle={{
-        right: { color: 'white' },
+        right: { color: Colors.branco },
       }}
     />
   );
+
+  const renderInputToolbar = (props: any) => {
+    return (
+      <InputToolbar
+        {...props}
+        containerStyle={styles.inputToolbar}
+        textInputStyle={styles.textInputStyle}
+        textInputProps={{
+          ...props.textInputProps,
+          editable: !animalAdopted,
+        }}
+      />
+    );
+  };
 
   if (loading) {
     return (
@@ -493,70 +489,27 @@ export function IndividualChatScreen() {
     <View style={{ flex: 1, paddingTop: insets.top }}>
       <Provider>
         <View style={{ flex: 1 }}>
-          <Portal>
-            {/* Diálogo de Confirmação de Adoção */}
-            <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
-              <Dialog.Title>Confirmar Adoção</Dialog.Title>
-              <Dialog.Content>
-                <Text
-                  style={{ fontSize: 16, color: '#fff' }}
-                >
-                  Tem certeza que deseja confirmar a adoção deste animal? 
-                  {"\n\n"}
-                  Esta ação não pode ser desfeita.
-                </Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setDialogVisible(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onPress={handleConfirmAdoption} 
-                  textColor="#fff"
-                  mode="contained"
-                  buttonColor="#4CAF50"
-                  >
-                  Confirmar Adoção
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-
-            {/* Diálogo de Rejeição de Adoção */}
-            <Dialog visible={dialogRejectionVisible} onDismiss={() => setDialogRejectionVisible(false)}>
-              <Dialog.Title>Recusar Adoção</Dialog.Title>
-              <Dialog.Content>
-                <Text
-                  style={{ fontSize: 16, color: '#fff' }}
-                >
-                  Tem certeza que deseja recusar a adoção deste animal? 
-                  {"\n\n"}
-                  Esta ação não pode ser desfeita.
-                </Text>
-              </Dialog.Content>
-              <Dialog.Actions>
-                <Button onPress={() => setDialogRejectionVisible(false)}>
-                  Cancelar
-                </Button>
-                <Button 
-                  onPress={handleRejectAdoption} 
-                  textColor="#fff"
-                  mode="contained"
-                  buttonColor="#ff4444"
-                  >
-                  Recusar Adoção
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-          </Portal>
+          <AdoptionDialog
+            visible={dialogVisible}
+            onDismiss={() => setDialogVisible(false)}
+            onConfirm={handleConfirmAdoption}
+            type="approve"
+          />
+          <AdoptionDialog
+            visible={dialogRejectionVisible}
+            onDismiss={() => setDialogRejectionVisible(false)}
+            onConfirm={handleRejectAdoption}
+            type="reject"
+          />
 
           {animalAdopted && (
             <View style={{
-              backgroundColor: '#4CAF50',
+              backgroundColor: Colors.verde,
               padding: 15,
               alignItems: 'center',
             }}>
               <Text style={{
-                color: 'white',
+                color: Colors.preto,
                 fontWeight: 'bold',
                 fontSize: 16,
               }}>
@@ -576,10 +529,11 @@ export function IndividualChatScreen() {
             renderSystemMessage={renderSystemMessage}
             renderAvatar={renderAvatar}
             renderBubble={renderChatBubble}
+            renderInputToolbar={renderInputToolbar}
             textInputProps={{
               editable: !animalAdopted,
             }}
-            bottomOffset={insets.bottom}
+            bottomOffset={insets.bottom + 8}
             />
         </View>
       </Provider>
@@ -598,5 +552,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  inputToolbar: {
+    backgroundColor: Colors.branco,
+    borderTopWidth: 1,
+    borderTopColor: Colors.cinza,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  textInputStyle: {
+    minHeight: 50,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    borderRadius: 20,
+    backgroundColor: Colors.cinza,
   },
 });
