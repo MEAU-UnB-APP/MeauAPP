@@ -10,6 +10,7 @@ import {
   Text,
 } from 'react-native';
 import { LocationMap } from './LocationMap';
+import ChatButton from './ChatButton';
 import { Animal } from '../types/index';
 import { Colors } from '../config/colors';
 
@@ -58,7 +59,15 @@ export const PetDetailsModal: React.FC<PetDetailsModalProps> = ({
             <Text style={styles.closeButtonText}>×</Text>
           </TouchableOpacity>
           <Text style={styles.modalTitle}>{animal.nome}</Text>
-          <View style={styles.headerSpacer} />
+          <View style={styles.iconContainer}>
+            <ChatButton
+              animalId={animal.id}
+              animalName={animal.nome}
+              donoId={animal.dono}
+              size={24}
+              iconColor={Colors.branco}
+            />
+          </View>
         </View>
 
         {/* Conteúdo com Scroll */}
@@ -216,13 +225,16 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   modalTitle: {
+    flex: 1,
     fontSize: 20,
     fontFamily: 'Roboto-Medium',
-    color: Colors.preto,
+    color: Colors.branco,
     textAlign: 'center',
+    marginHorizontal: 12,
   },
-  headerSpacer: {
-    width: 40,
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   modalScroll: {
     flex: 1,

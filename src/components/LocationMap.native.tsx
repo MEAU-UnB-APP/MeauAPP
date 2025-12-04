@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet, Text } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import { LocationData } from "../types/index";
+import { Colors } from "../config/colors";
 
 export interface LocationMapProps {
   locationData?: LocationData;
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
   addressText: {
     fontSize: 14,
     fontFamily: "Roboto-Regular",
-    color: "#757575",
+    color: Colors.preto,
     marginBottom: 12,
     paddingHorizontal: 4,
   },
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     height: 300,
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: Colors.cinza,
   },
   map: {
     flex: 1,
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f5f5f5",
+    backgroundColor: Colors.cinza,
     borderRadius: 8,
     marginTop: 12,
     minHeight: 150,
@@ -117,14 +118,15 @@ const styles = StyleSheet.create({
   noLocationText: {
     fontSize: 16,
     fontFamily: "Roboto-Medium",
-    color: "#757575",
+    color: Colors.preto,
     marginBottom: 8,
   },
   noLocationSubtext: {
     fontSize: 14,
     fontFamily: "Roboto-Regular",
-    color: "#999",
+    color: Colors.preto,
     textAlign: "center",
+    opacity: 0.6,
   },
 });
 
