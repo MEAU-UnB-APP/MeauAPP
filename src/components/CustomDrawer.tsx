@@ -11,16 +11,16 @@ import { removeTokenFromFirestore } from '../services/fcmService';
 import { Colors } from '../config/colors';
 
 
-const DrawerItem = ({ label, onPress, iconName, backgroundColor }: any) => (
+const DrawerItem = ({ label, onPress, iconName, backgroundColor, textColor, iconColor }: any) => (
   <TouchableOpacity
     onPress={onPress}
-    style={[styles.drawerItem, { backgroundColor: backgroundColor || Colors.roxoclaro }]}
+    style={[styles.drawerItem, { backgroundColor: backgroundColor || Colors.roxo }]}
   >
     <View style={styles.drawerItemContent}>
       {iconName && (
-        <Icon name={iconName} size={24} color={Colors.branco} style={styles.drawerIcon} />
+        <Icon name={iconName} size={24} color={iconColor || Colors.branco} style={styles.drawerIcon} />
       )}
-      <Text style={styles.drawerLabel}>
+      <Text style={[styles.drawerLabel, textColor && { color: textColor }]}>
         {label}
       </Text>
     </View>
@@ -100,7 +100,7 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
       {...props}
       contentContainerStyle={{
         flexGrow: 1,
-        backgroundColor: Colors.roxoclaro,
+        backgroundColor: Colors.roxo,
         padding: 0,
         margin: 0,
         alignItems: 'stretch',
@@ -127,28 +127,32 @@ export default function CustomDrawer(props: DrawerContentComponentProps) {
           <Text style={styles.nameLabel}>{userName}</Text>
         </View>
         <DrawerItem 
+          label="Chat" 
+          onPress={() => navigation.navigate('Chat')}
+          iconName="chat-bubble-outline"
+          backgroundColor={Colors.rosa}
+          textColor={Colors.preto}
+          iconColor={Colors.preto}
+        />
+        <DrawerItem 
           label="Meus Pets" 
           onPress={() => navigation.navigate('MeusPets')}
           iconName="pets"
           backgroundColor={Colors.rosaescuro}
         />
         <DrawerItem 
-          label="Chat" 
-          onPress={() => navigation.navigate('Chat')}
-          iconName="chat-bubble-outline"
-          backgroundColor={Colors.rosa}
-        />
-        <DrawerItem 
           label="Cadastrar um pet" 
           onPress={() => navigation.navigate('Cadastrar Animal')}
           iconName="add-circle-outline"
-          backgroundColor={Colors.roxoclaro}
+          backgroundColor={Colors.verde}
+          textColor={Colors.preto}
+          iconColor={Colors.preto}
         />
         <DrawerItem 
           label="Adotar um pet" 
           onPress={() => navigation.navigate('Adotar')}
           iconName="pets"
-          backgroundColor={Colors.roxo}
+          backgroundColor={Colors.roxoclaro}
         />
       </View>
       
@@ -216,13 +220,13 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     width: '100%',
-    backgroundColor: Colors.verde,
+    backgroundColor: Colors.roxoclaro,
     paddingVertical: 12,
     alignItems: 'center',
     alignSelf: 'stretch',
   },
   logoutButtonText: {
-    color: Colors.roxoclaro,
+    color: Colors.branco,
     fontFamily: 'Roboto-Medium',
     fontSize: 14,
   },

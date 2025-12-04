@@ -52,7 +52,7 @@ export function AppDrawer() {
         component={Adotar}
         options={{
           title: "Adotar",
-          headerStyle: { backgroundColor: Colors.roxo },
+          headerStyle: { backgroundColor: Colors.roxoclaro },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
@@ -94,13 +94,13 @@ export function AppDrawer() {
         component={CadastroAnimal}
         options={{
           title: "Cadastrar Animal",
-          headerStyle: { backgroundColor: Colors.roxoclaro },
+          headerStyle: { backgroundColor: Colors.verde },
           headerTitleStyle: {
             fontFamily: "Roboto-Medium",
             fontSize: 20,
-            color: Colors.branco,
+            color: Colors.preto,
           },
-          headerTintColor: Colors.branco,
+          headerTintColor: Colors.preto,
         }}
       />
       <Drawer.Screen
